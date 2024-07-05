@@ -1,0 +1,9 @@
+
+# Ignore all the results
+results/
+
+# Ignore the genereted events
+event_generation/events_*
+event_generator_C_ACLiC_dict_rdict.pcm 
+event_generator_C.d
+event_generator_C.so   
