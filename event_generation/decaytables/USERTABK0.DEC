@@ -1,0 +1,10 @@
+Decay K_S0
+1.000 pi-   pi+                PHSP;
+Enddecay
+
+Decay Lambda0
+1.000 p+      pi-                                     PHSP; #[Reconstructed PDG2011]
+Enddecay
+
+End
+
