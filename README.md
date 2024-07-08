@@ -1,7 +1,7 @@
 # ACTS-Analysis-Scripts
 Repository for the script to run the NA60+ reconstruction chain and analyze the results
 # Geometry
-The vertex telescope geometry can be downloaded from https://cernbox.cern.ch/s/z2HWIp9xKg1Tmxg.
+The vertex telescope geometry can be downloaded from https://cernbox.cern.ch/s/z2HWIp9xKg1Tmxg (files to be put in geomVTNA60p).
 # Analysis of the data
 The scripts the event generation are contained in event_generation.
 # Run the reconstruction
