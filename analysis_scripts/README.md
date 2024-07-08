@@ -1,4 +1,4 @@
-#Analysis scripts
+# Analysis scripts
 1) ReadSP_evbyev.C and ReadActs_SProtated.C: scripts to 
 2) cpu_time_studies.py: functions to study the CPU time 
 3) readTree.py: function to check the hits distributions 
