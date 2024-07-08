@@ -1,5 +1,5 @@
 # Event generator
-This directory contains the script to generate events in csv files that can be read by ACTS. The events contains prompt proton, pions, and kaons generated according to the NA49 measurements in Pb-Pb collisions at 40 AGeV and 158 AGeV [^1][^2]. It can also generate $\text{K}^0_S \rightarrow \pi^+ + \pi^-$, $\Lambda^0 \rightarrow \text{K}^- + \pi^+$ from NA49 measurements [^3], and $\text{D}^0 \rightarrow \pi^- + \text{p}$ from  POWHEG-BOX event generator [^4]. The decays are simulated using AliDecayerEvtGen. 
+This directory contains the script to generate events in csv files that can be read by ACTS. The events contains prompt proton, pions, and kaons generated according to the NA49 measurements in Pb-Pb collisions at 40 AGeV and 158 AGeV[^1][^2]. It can also generate $\text{K}^0_S \rightarrow \pi^+ + \pi^-$, $\Lambda^0 \rightarrow \text{K}^- + \pi^+$ from NA49 measurements[^3], and $\text{D}^0 \rightarrow \pi^- + \text{p}$ from  POWHEG-BOX event generator[^4]. The decays are simulated using AliDecayerEvtGen. 
 
 To run the script:
 
