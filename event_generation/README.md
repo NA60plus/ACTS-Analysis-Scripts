@@ -10,6 +10,11 @@ To run the script:
 event_generator(1000)
 ```
 
+# Background for the muon spectrometer
+The background for the muon spectrometer is taken from FLUKA simulation. csv files with the kinematics of the particles crossing the first station of the muon spectrometer can be produced from the FLUKA simulation using generate_ms_bkg.py. generate_ms_bkg.py can also be used to merge csv files.
+The simulation and csv files can be found on cernbox at /eos/experiment/na60plus/MonteCarlo/Fluka .
+
+
 You can download a set of events with prompt particles, $\text{K}^0_S \rightarrow \pi^+ + \pi^-$, and $\Lambda^0 \rightarrow \text{K}^- + \pi^+$ at 40 AGeV from https://cernbox.cern.ch/s/Ch80tIdItovM4R6.
 
 [^1]: Afanasiev, Sergey V., et al. "Energy dependence of pion and kaon production in central Pb+ Pb collisions." Physical Review C 66.5 (2002): 054902.
