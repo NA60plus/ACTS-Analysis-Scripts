@@ -120,7 +120,7 @@ void BFieldNA60Plus(int nstepx = 100, int nstepy = 100, int nstepz = 400, bool a
         bxval = 0;
         bzval = 0;
         byval = (Double_t)fitB->Eval(zval);
-        if (zval < 400 && zval > -70)
+        if (zval < 840 && zval > -150)
           byval += ByMEP48;
         fprintf(fptxt, "%f %f %f %f %f %f\n", xval, yval, zval, bxval, byval, bzval);
         hField->SetBinContent(hField->FindBin(zval), byval);
