@@ -33,7 +33,7 @@ void InitBgGenerationPart(double, double, double, double, double,
                           double, double, double, double,
                           double, double,
                           double, double, double, double, double);
-void GenBgEvent(double, double, double, int, bool, bool, bool, AliDecayerEvtGen *, FILE *, int, float);
+void GenBgEvent(double, double, double, int, bool, bool, bool, AliDecayerEvtGen *, FILE *, int, float, TH1D*, TH1D*, TH1D*, TH1D*, TH1D*, TH1D*);
 
 const double kMassP = 0.938;
 const double kMassK = 0.4937;
@@ -173,7 +173,7 @@ void event_generator(int nev,
   printf("pion   multiplicity in %f<y<%f = %f\n", yminBG, ymaxBG, fNChPi);
   printf("kaon   multiplicity in %f<y<%f = %f\n", yminBG, ymaxBG, fNChK);
   printf("proton multiplicity in %f<y<%f = %f\n", yminBG, ymaxBG, fNChP);
-
+  
   double vX = 0, vY = 0, vZ = 0;
 
   // 1.5 mm thick Pb disks spaced by 12
@@ -189,10 +189,17 @@ void event_generator(int nev,
   TH1D *hGenY = new TH1D("hGenY", ";y (mm);Entries", 100, -3, 3);
   TH1D *hGenX = new TH1D("hGenX", ";x (mm);Entries", 100, -3, 3);
   TH2D *hGenXY = new TH2D("hGenXY", ";x (mm);y (mm);Entries", 100, -3, 3, 100, -3, 3);
+
+  TH1D *hNGenPi = new TH1D("hNGenPi", ";x (mm);Entries", 1000, -0.5, 999.5);
+  TH1D *hNGenK = new TH1D("hNGenK", ";x (mm);Entries", 1000, -0.5, 999.5);
+  TH1D *hNGenP = new TH1D("hNGenP", ";x (mm);Entries", 1000, -0.5, 999.5);
+  TH1D *hNGenK0S = new TH1D("hNGenK0S", ";x (mm);Entries", 1000, -0.5, 999.5);
+  TH1D *hNGenLambda = new TH1D("hNGenLambda", ";x (mm);Entries", 1000, -0.5, 999.5);
+  TH1D *hNGenParts = new TH1D("hNGenParts", ";x (mm);Entries", 2000, -0.5, 1999.5);
+
   FILE *fpcsv;
   for (int i = 0; i < nev; i++)
   {
-
     int nzeros = 9;
     int eventNumber = i;
     while (eventNumber != 0)
@@ -212,12 +219,11 @@ void event_generator(int nev,
     if (beamSigma > 0)
     {
       vX = gRandom->Gaus(0, beamSigma);
-      while (TMath::Abs(vX) > 0.5)
-        vX = gRandom->Gaus(0, beamSigma);
-
       vY = gRandom->Gaus(0, beamSigma);
-      while (TMath::Abs(vY) > 0.5)
+      while (TMath::Sqrt(vX*vX+vY*vY) > 0.5){
+        vX = gRandom->Gaus(0, beamSigma);
         vY = gRandom->Gaus(0, beamSigma);
+      }
     }
     if (fullTargetSystem)
     {
@@ -233,7 +239,13 @@ void event_generator(int nev,
     hGenX->Fill(vX);
     hGenY->Fill(vY);
     hGenXY->Fill(vX, vY);
-    GenBgEvent(vX, vY, vZ, i, addBkg, addD0, addSec, fDecayer, fpcsv, Eint, periferal);
+    GenBgEvent(vX, vY, vZ, i, addBkg, addD0, addSec, fDecayer, fpcsv, Eint, periferal,
+               hNGenPi,
+               hNGenK,
+               hNGenP,
+               hNGenK0S,
+               hNGenLambda,
+               hNGenParts);
     fclose(fpcsv);
   }
   filPow->Close();
@@ -242,8 +254,27 @@ void event_generator(int nev,
   hGenX->Write();
   hGenY->Write();
   hGenXY->Write();
+
+  hNGenPi->Write();
+  hNGenK->Write();
+  hNGenP->Write();
+  hNGenK0S->Write();
+  hNGenLambda->Write();
+  hNGenParts->Write();
   check->Close();
-  // fDecayer->Delete();
+  fDecayer->Delete();
+
+  h3Dpow->Delete();
+  hD0pt->Delete();
+  hD0y->Delete();
+  fpt->Delete();
+  fy->Delete();
+  fdNdYPi->Delete();
+  fdNdYK->Delete();
+  fdNdYP->Delete();
+  fdNdPtPi->Delete();
+  fdNdPtK->Delete();
+  fdNdPtP->Delete();
 }
 
 void InitBgGenerationPart(double NPi, double NKplus, double NKminus, double NP, double Piratio,
@@ -273,7 +304,7 @@ void InitBgGenerationPart(double NPi, double NKplus, double NKminus, double NP, 
   fdNdPtP->SetParameter(0, TP);
 }
 
-void GenBgEvent(double x, double y, double z, int event, bool addBkg, bool addD0, bool addSec, AliDecayerEvtGen *fDecayer, FILE *fpcsv, int Eint, float periferal)
+void GenBgEvent(double x, double y, double z, int event, bool addBkg, bool addD0, bool addSec, AliDecayerEvtGen *fDecayer, FILE *fpcsv, int Eint, float periferal, TH1D* h1, TH1D* h2, TH1D* h3, TH1D* h4, TH1D* h5, TH1D* h6)
 {
 
   if (fNChPi < 0 && fNChK < 0 && fNChP < 0)
@@ -304,6 +335,8 @@ void GenBgEvent(double x, double y, double z, int event, bool addBkg, bool addD0
   int ntrTot = 0;
   // pions
   double ntrPi = gRandom->Poisson(fNChPi * periferal);
+  h1->Fill(ntrPi);
+  ntrTot += ntrPi;
   printf("fNChPi=%f ntrPi=%f\n", fNChPi, ntrPi);
   printf("vX=%f vY=%f vZ=%f \n", x, y, z);
   // 2|0|14|0|0
@@ -327,6 +360,8 @@ void GenBgEvent(double x, double y, double z, int event, bool addBkg, bool addD0
     }
     // kaons
     double ntrK = gRandom->Poisson(fNChK * periferal);
+    h2->Fill(ntrK);
+    ntrTot += ntrK;
     printf("fNChK=%f ntrK=%f\n", fNChK, ntrK);
     for (int itr = 0; itr < ntrK; itr++)
     {
@@ -344,6 +379,8 @@ void GenBgEvent(double x, double y, double z, int event, bool addBkg, bool addD0
     }
     // protons
     double ntrP = gRandom->Poisson(fNChP * periferal);
+    h3->Fill(ntrP);
+    ntrTot += ntrP;
     printf("fNChP=%f ntrP=%f\n", fNChP, ntrP);
     for (int itr = 0; itr < ntrP; itr++)
     {
@@ -367,9 +404,15 @@ void GenBgEvent(double x, double y, double z, int event, bool addBkg, bool addD0
     for (auto pdg : vPdg)
     {
       int avTot = GetMultiplicity(pdg, Eint, true) * GetBRatio(pdg);
+
       double mass = TDatabasePDG::Instance()->GetParticle(pdg)->Mass();
       int totMoms = gRandom->Poisson(avTot * periferal);
+      if(pdg ==310)
+        h4->Fill(totMoms);
+      else
+        h5->Fill(totMoms);
 
+      //ntrTot += totMoms*2;
       bool matter = true;
 
       fpt = new TF1("fpt", "x*exp(-TMath::Sqrt(x**2+[0]**2)/[1])", 0, 100);
@@ -430,4 +473,5 @@ void GenBgEvent(double x, double y, double z, int event, bool addBkg, bool addD0
       }
     }
   }
+  h6->Fill(ntrTot);  
 }

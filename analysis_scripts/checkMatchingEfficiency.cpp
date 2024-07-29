@@ -99,6 +99,11 @@ void checkMatchingEfficiency(
     std::vector<float> *t_phiVT = nullptr;
     std::vector<float> *t_thetaVT = nullptr;
     std::vector<float> *t_qopVT = nullptr;
+    std::vector<float> *t_eloc0VT = nullptr;
+    std::vector<float> *t_eloc1VT = nullptr;
+    std::vector<float> *t_ephiVT = nullptr;
+    std::vector<float> *t_ethetaVT = nullptr;
+    std::vector<float> *t_eqopVT = nullptr;
     std::vector<float> *t_idVT = nullptr;
     // Set branch addresses for truth particle
     treeVT->SetBranchAddress("eLOC0_fit", &t_loc0VT);
@@ -106,6 +111,11 @@ void checkMatchingEfficiency(
     treeVT->SetBranchAddress("ePHI_fit", &t_phiVT);
     treeVT->SetBranchAddress("eTHETA_fit", &t_thetaVT);
     treeVT->SetBranchAddress("eQOP_fit", &t_qopVT);
+    treeVT->SetBranchAddress("err_eLOC0_fit", &t_eloc0VT);
+    treeVT->SetBranchAddress("err_eLOC1_fit", &t_eloc1VT);
+    treeVT->SetBranchAddress("err_ePHI_fit", &t_ephiVT);
+    treeVT->SetBranchAddress("err_eTHETA_fit", &t_ethetaVT);
+    treeVT->SetBranchAddress("err_eQOP_fit", &t_eqopVT);
     treeVT->SetBranchAddress("majorityParticleID", &t_idVT);
 
     // Define variables to hold kinematic data of true particles
@@ -114,6 +124,11 @@ void checkMatchingEfficiency(
     std::vector<float> *t_phiMS = nullptr;
     std::vector<float> *t_thetaMS = nullptr;
     std::vector<float> *t_qopMS = nullptr;
+    std::vector<float> *t_eloc0MS = nullptr;
+    std::vector<float> *t_eloc1MS = nullptr;
+    std::vector<float> *t_ephiMS = nullptr;
+    std::vector<float> *t_ethetaMS = nullptr;
+    std::vector<float> *t_eqopMS = nullptr;
     std::vector<float> *t_idMS = nullptr;
     // Set branch addresses for truth particle
     treeMS->SetBranchAddress("eLOC0_fit", &t_loc0MS);
@@ -121,6 +136,11 @@ void checkMatchingEfficiency(
     treeMS->SetBranchAddress("ePHI_fit", &t_phiMS);
     treeMS->SetBranchAddress("eTHETA_fit", &t_thetaMS);
     treeMS->SetBranchAddress("eQOP_fit", &t_qopMS);
+    treeMS->SetBranchAddress("err_eLOC0_fit", &t_eloc0MS);
+    treeMS->SetBranchAddress("err_eLOC1_fit", &t_eloc1MS);
+    treeMS->SetBranchAddress("err_ePHI_fit", &t_ephiMS);
+    treeMS->SetBranchAddress("err_eTHETA_fit", &t_ethetaMS);
+    treeMS->SetBranchAddress("err_eQOP_fit", &t_eqopMS);
     treeMS->SetBranchAddress("majorityParticleID", &t_idMS);
 
     //---------------------------------------
@@ -165,11 +185,11 @@ void checkMatchingEfficiency(
                 hdtheta->Fill(t_thetaVT->at(j) - t_thetaMS->at(k));
                 hdqop->Fill(t_qopVT->at(j) - t_qopMS->at(k));
 
-                float sum = TMath::Abs(t_loc0VT->at(j) - t_loc0MS->at(k)) + 
-                            TMath::Abs(t_loc1VT->at(j) - t_loc1MS->at(k)) + 
-                            TMath::Abs(t_phiVT->at(j) - t_phiMS->at(k)) + 
-                            TMath::Abs(t_thetaVT->at(j) - t_thetaMS->at(k)) + 
-                            TMath::Abs(t_qopVT->at(j) - t_qopMS->at(k));
+                float sum = TMath::Sqrt((t_loc0VT->at(j) - t_loc0MS->at(k))*(t_loc0VT->at(j) - t_loc0MS->at(k))/(t_eloc0VT->at(i)*t_eloc0VT->at(i)+t_eloc0VT->at(k)*t_eloc0VT->at(k)) + 
+                                        (t_loc1VT->at(j) - t_loc1MS->at(k))*(t_loc1VT->at(j) - t_loc1MS->at(k))/(t_eloc0VT->at(i)*t_eloc0VT->at(i)+t_eloc0VT->at(k)*t_eloc0VT->at(k)) + 
+                                        (t_phiVT->at(j) - t_phiMS->at(k))*(t_phiVT->at(j) - t_phiMS->at(k))/(t_eloc0VT->at(i)*t_eloc0VT->at(i)+t_eloc0VT->at(k)*t_eloc0VT->at(k)) + 
+                                        (t_thetaVT->at(j) - t_thetaMS->at(k))*(t_thetaVT->at(j) - t_thetaMS->at(k))/(t_eloc0VT->at(i)*t_eloc0VT->at(i)+t_eloc0VT->at(k)*t_eloc0VT->at(k)) + 
+                                        (t_qopVT->at(j) - t_qopMS->at(k))*(t_qopVT->at(j) - t_qopMS->at(k))/(t_eloc0VT->at(i)*t_eloc0VT->at(i)+t_eloc0VT->at(k)*t_eloc0VT->at(k)) +);
 
                 hdsum->Fill(sum);
 
