@@ -1,9 +1,12 @@
 
 # Ignore all the results
-results/
+results/*
 
 # Ignore the genereted events
 event_generation/events_*
 event_generator_C_ACLiC_dict_rdict.pcm 
 event_generator_C.d
 event_generator_C.so   
+GenMUONLMR_cxx_ACLiC_dict_rdict.pcm 
+GenMUONLMR_cxx.d
+GenMUONLMR_cxx.so   
