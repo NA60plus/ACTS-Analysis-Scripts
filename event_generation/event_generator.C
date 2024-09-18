@@ -16,6 +16,7 @@
 #include "AliDecayer.h"
 #include "AliDecayerEvtGen.h"
 
+#include "GenMUONLMR.h"
 #include "strange_particles_data.h"
 
 namespace fs = std::filesystem;
@@ -28,12 +29,37 @@ TF1 *fy;
 TF1 *fdNdYPi, *fdNdYK, *fdNdYP, *fdNdPtPi, *fdNdPtK, *fdNdPtP;
 double fNChPi, fNChK, fNChP;
 
+// Added June 2019 for J/psi generation
+// parameters for parameteriazion of pt distributions for J/psi from PYTHIA6
+double par_p0;
+double par_n;
+double par_n2;
+// parameters for parameteriazion of y distributions for J/psi (Schuler)
+double p1_xF, p2_xF, p3_xF, p4_xF;
+
+// double y0SG   = 1.9;   // gaussian y mean - 20 GeV
+// double y0SG   = 2.08;   // gaussian y mean - 30 GeV
+double muon_y0SG = 2.22;   // gaussian y mean - 40 GeV
+double muon_sigySG = 1.;   // .. sigma
+double muon_yminSG = -10.; // min y to generate
+double muon_ymaxSG = 10.;  //
+double muon_TSG;           // inv.slope of thermal pt distribution
+double muon_ptminSG = 0.01;
+double muon_ptmaxSG = 3;
+
+
+// settings for signal generation
+double MotherMass;
+int generYPtPar, ProcType;
+
 void InitBgGenerationPart(double, double, double, double, double,
                           double, double, double, double, double,
                           double, double, double, double,
                           double, double,
                           double, double, double, double, double);
-void GenBgEvent(double, double, double, int, bool, bool, bool, AliDecayerEvtGen *, FILE *, int, float, TH1D*, TH1D*, TH1D*, TH1D*, TH1D*, TH1D*);
+void GenBgEvent(double, double, double, int, bool, bool, bool, const Char_t*, AliDecayerEvtGen *, FILE *, FILE *, int, float, TH1D *, TH1D *, TH1D *, TH1D *, TH1D *, TH1D *);
+
+void SetProcessParameters(const Char_t *Process, Double_t E);
 
 const double kMassP = 0.938;
 const double kMassK = 0.4937;
@@ -46,7 +72,8 @@ void event_generator(int nev,
                      bool addBkg = true,
                      bool addD0 = false,
                      bool addSec = false,
-                     double beamSigma = 0,
+                     const Char_t *Process = "none",
+                     double beamSigma = 0.5,
                      bool fullTargetSystem = false,
                      int onlyT = -1,
                      float periferal = 1)
@@ -149,9 +176,16 @@ void event_generator(int nev,
     options += "_onlyTarget_" + std::to_string(onlyT);
     options += "_beamSigma_" + std::to_string(beamSigma);
   }
+  
+  if (strcmp(Process, "none") != 0)
+  {
+    options += "_";
+    options += Process;
+  }
   if (periferal != 1)
     options += "_periferal_factor_" + std::to_string(periferal);
   std::string directoryName = "events_" + std::to_string(Eint) + "GeV" + options;
+  std::string directoryName_muons = "events_" + std::to_string(Eint) + "GeV" + options + "_muons";
 
   if (!fs::exists(directoryName))
   {                                                     // Check if directory doesn't exist
@@ -170,10 +204,27 @@ void event_generator(int nev,
   {
     std::cout << "Directory already exists: " << directoryName << std::endl;
   }
+  if (!fs::exists(directoryName_muons))
+  {                                                     // Check if directory doesn't exist
+    bool created = fs::create_directory(directoryName_muons); // Create the directory
+    if (created)
+    {
+      std::cout << "Directory created successfully: " << directoryName_muons << std::endl;
+    }
+    else
+    {
+      std::cerr << "Failed to create directory: " << directoryName_muons << std::endl;
+      return; // Return error code
+    }
+  }
+  else
+  {
+    std::cout << "Directory already exists: " << directoryName_muons << std::endl;
+  }
   printf("pion   multiplicity in %f<y<%f = %f\n", yminBG, ymaxBG, fNChPi);
   printf("kaon   multiplicity in %f<y<%f = %f\n", yminBG, ymaxBG, fNChK);
   printf("proton multiplicity in %f<y<%f = %f\n", yminBG, ymaxBG, fNChP);
-  
+
   double vX = 0, vY = 0, vZ = 0;
 
   // 1.5 mm thick Pb disks spaced by 12
@@ -181,9 +232,10 @@ void event_generator(int nev,
   double targetThickness = 1.5;   // mm
   double distBetweenTargets = 12; // mm
   char csvname[80];
+  char csvname_muons[80];
 
   gRandom->SetSeed(1801);
-  std::string qa_file_name = directoryName+"/QA_plots.root";
+  std::string qa_file_name = directoryName + "/QA_plots.root";
   TFile *check = new TFile(qa_file_name.c_str(), "recreate");
   TH1D *hGenZ = new TH1D("hGenZ", ";z (mm);Entries", 1100, -100, 10);
   TH1D *hGenY = new TH1D("hGenY", ";y (mm);Entries", 100, -3, 3);
@@ -198,6 +250,7 @@ void event_generator(int nev,
   TH1D *hNGenParts = new TH1D("hNGenParts", ";x (mm);Entries", 2000, -0.5, 1999.5);
 
   FILE *fpcsv;
+  FILE *fpcsv_muons;
   for (int i = 0; i < nev; i++)
   {
     int nzeros = 9;
@@ -215,12 +268,19 @@ void event_generator(int nev,
     sprintf(csvname, eventFile.c_str(), i);
 
     fpcsv = fopen(csvname, "w");
+
+    eventFile = directoryName_muons + "/event" + std::string(nzeros, '0') + std::to_string(static_cast<int>(i)) + "-particles.csv";
+    sprintf(csvname_muons, eventFile.c_str(), i);
+
+    fpcsv_muons = fopen(csvname_muons, "w");
+
     printf("\nEvent no. %d\n", i);
     if (beamSigma > 0)
     {
       vX = gRandom->Gaus(0, beamSigma);
       vY = gRandom->Gaus(0, beamSigma);
-      while (TMath::Sqrt(vX*vX+vY*vY) > 0.5){
+      while (TMath::Sqrt(vX * vX + vY * vY) > 0.5)
+      {
         vX = gRandom->Gaus(0, beamSigma);
         vY = gRandom->Gaus(0, beamSigma);
       }
@@ -239,7 +299,7 @@ void event_generator(int nev,
     hGenX->Fill(vX);
     hGenY->Fill(vY);
     hGenXY->Fill(vX, vY);
-    GenBgEvent(vX, vY, vZ, i, addBkg, addD0, addSec, fDecayer, fpcsv, Eint, periferal,
+    GenBgEvent(vX, vY, vZ, i, addBkg, addD0, addSec, Process, fDecayer, fpcsv, fpcsv_muons, Eint, periferal,
                hNGenPi,
                hNGenK,
                hNGenP,
@@ -247,6 +307,7 @@ void event_generator(int nev,
                hNGenLambda,
                hNGenParts);
     fclose(fpcsv);
+    fclose(fpcsv_muons);
   }
   filPow->Close();
   check->cd();
@@ -304,9 +365,8 @@ void InitBgGenerationPart(double NPi, double NKplus, double NKminus, double NP, 
   fdNdPtP->SetParameter(0, TP);
 }
 
-void GenBgEvent(double x, double y, double z, int event, bool addBkg, bool addD0, bool addSec, AliDecayerEvtGen *fDecayer, FILE *fpcsv, int Eint, float periferal, TH1D* h1, TH1D* h2, TH1D* h3, TH1D* h4, TH1D* h5, TH1D* h6)
+void GenBgEvent(double x, double y, double z, int event, bool addBkg, bool addD0, bool addSec, const Char_t *Process, AliDecayerEvtGen *fDecayer, FILE *fpcsv, FILE *fpcsv_muons, int Eint, float periferal, TH1D *h1, TH1D *h2, TH1D *h3, TH1D *h4, TH1D *h5, TH1D *h6)
 {
-
   if (fNChPi < 0 && fNChK < 0 && fNChP < 0)
     return;
   // generate bg. events from simple thermalPt-gaussian Y parameterization
@@ -342,6 +402,7 @@ void GenBgEvent(double x, double y, double z, int event, bool addBkg, bool addD0
   // 2|0|14|0|0
   int particleNumber = 1;
   fprintf(fpcsv, "particle_id,particle_type,process,vx,vy,vz,vt,px,py,pz,m,q\n");
+  fprintf(fpcsv_muons, "particle_id,particle_type,process,vx,vy,vz,vt,px,py,pz,m,q\n");
   if (addBkg)
   {
     for (int itr = 0; itr < ntrPi; itr++)
@@ -395,24 +456,27 @@ void GenBgEvent(double x, double y, double z, int event, bool addBkg, bool addD0
       unsigned long long barcode = std::stoull(binaryString, nullptr, 2);
       fprintf(fpcsv, "%llu,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", barcode, ptypecsv, 0, x, y, z, 0., pxyz[0], pxyz[1], pxyz[2], masscsv, charge);
     }
-  }
+  }    
+  int nMomGen = 0;
+
   if (addD0 || addSec)
   {
     std::vector<int> vPdg = {310, 3122};
 
-    int nMomGen = 0;
+    //std::vector<int> vPdg = {310};
+
     for (auto pdg : vPdg)
     {
       int avTot = GetMultiplicity(pdg, Eint, true) * GetBRatio(pdg);
 
       double mass = TDatabasePDG::Instance()->GetParticle(pdg)->Mass();
       int totMoms = gRandom->Poisson(avTot * periferal);
-      if(pdg ==310)
+      if (pdg == 310)
         h4->Fill(totMoms);
       else
         h5->Fill(totMoms);
 
-      //ntrTot += totMoms*2;
+      // ntrTot += totMoms*2;
       bool matter = true;
 
       fpt = new TF1("fpt", "x*exp(-TMath::Sqrt(x**2+[0]**2)/[1])", 0, 100);
@@ -473,5 +537,372 @@ void GenBgEvent(double x, double y, double z, int event, bool addBkg, bool addD0
       }
     }
   }
-  h6->Fill(ntrTot);  
+  h6->Fill(ntrTot);
+
+  if (strcmp(Process, "none") != 0)
+  {
+    nMomGen++;
+    SetProcessParameters(Process, TMath::Abs(Eint));
+    GenMUONLMR *gener = new GenMUONLMR(7, 1);
+    //      0         1        2         3         4        5           6         7
+    //  "fPtPion","fPtKaon","fPtEta","fPtRho","fPtOmega","fPtPhi","fPtEtaPrime"  "fPtJPsi"
+    gener->SetYParams(generYPtPar, 1., muon_y0SG, muon_sigySG, 0.);
+    gener->SetPtParams(generYPtPar, 1., muon_TSG, MotherMass, 0.);
+    // 2 = rho
+    // 3 = omega 2 body
+    // 4 = omega Dalitz
+    //
+    // Processes eta 2B=0  eta D=1  rho =2   omega 2B=3  omega D=4  phi=5    eta p=6       pi=7      K=8      J/psi=9
+    //           kEtaLMR   kEtaLMR  kRhoLMR  kOmegaLMR   kOmegaLMR  kPhiLMR  kEtaPrimeLMR  kPionLMR  kK        kJPsi
+    //
+    //  BR       5.8e-6    3.1e-4   4.55e-5  7.28e-5     1.3e-4     2.86e-4  1.04e-4       1         0.6344    0.05
+
+    // Added June 2019 for J/psi generation
+    if (strcmp(Process, "jpsisch") == 0)
+    {
+      gener->SetYParams(generYPtPar, 1., p1_xF, p2_xF, p3_xF, p4_xF);
+    }
+    else
+    {
+      gener->SetYParams(generYPtPar, 1., muon_y0SG, muon_sigySG, 0., 0.);
+    }
+
+    if (strcmp(Process, "jpsi") == 0 || strcmp(Process, "jpsisch") == 0)
+    {
+      gener->SetPtParams(generYPtPar, 1., par_p0, par_n, par_n2);
+    }
+    else
+    {
+      gener->SetPtParams(generYPtPar, 1., muon_TSG, MotherMass, 0.);
+    }
+    gener->GenerateSingleProcess(ProcType);
+    gener->Generate();
+
+    TParticle *iparticle0 = gener->GetMuon(0);
+    TParticle *iparticle1 = gener->GetMuon(1);
+    TLorentzVector parent;
+
+    std::string binaryString = std::bitset<12>(event + 1).to_string() + std::string(12, '0') + std::bitset<16>(particleNumber++).to_string() + std::string(24, '0');
+    unsigned long long barcode = std::stoull(binaryString, nullptr, 2);
+
+    float pxGenD = iparticle0->Px()+iparticle1->Px();
+    float pyGenD = iparticle0->Py()+iparticle1->Py();
+    float pzGenD = iparticle0->Pz()+iparticle1->Pz();
+    parent.SetPxPyPzE(iparticle0->Px()+iparticle1->Px(),iparticle0->Py()+iparticle1->Py(),iparticle0->Pz()+iparticle1->Pz(),iparticle0->Energy()+iparticle1->Energy());
+    fprintf(fpcsv, "%llu,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", barcode, 443, nMomGen, x, y, z, 0., pxGenD, pyGenD, pzGenD, parent.M(), 0.0);
+    fprintf(fpcsv_muons, "%llu,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", barcode, 443, nMomGen, x, y, z, 0., pxGenD, pyGenD, pzGenD, parent.M(), 0.0);
+    
+    for (int i = 0; i < 2; i++)
+    {
+      TParticle *iparticle = gener->GetMuon(i);
+      double charge = iparticle->GetPdgCode() / TMath::Abs(iparticle->GetPdgCode());
+      double vX = iparticle->Vx();
+      double vY = iparticle->Vy();
+      double vZ = iparticle->Vz();
+      double px = iparticle->Px();
+      double py = iparticle->Py();
+      double pz = iparticle->Pz();
+      int ptypecsv = TMath::Abs(iparticle->GetPdgCode());
+      double masscsv = TDatabasePDG::Instance()->GetParticle(ptypecsv)->Mass();
+
+      std::string binaryString = std::bitset<12>(event + 1).to_string() + std::bitset<12>(nMomGen).to_string() + std::bitset<16>(particleNumber++).to_string() + std::bitset<8>(0).to_string() + std::bitset<16>(0 * int(i - 1)).to_string();
+      unsigned long long barcode = std::stoull(binaryString, nullptr, 2);
+
+      fprintf(fpcsv, "%llu,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", barcode, ptypecsv, 0, x + vX, y + vY, z + vZ, 0., px, py, pz, masscsv, charge);
+      fprintf(fpcsv_muons, "%llu,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", barcode, ptypecsv, 1, x + vX, y + vY, z + vZ, 0., px, py, pz, masscsv, charge);
+    }
+  }
+
+}
+
+void SetProcessParameters(const Char_t *Process, Double_t E)
+{
+  // modified June2019 for J/psi parameterization
+  if (E == 20.)
+  {
+    muon_y0SG = 1.9;
+    muon_sigySG = 1.;
+  }
+  else if (E == 30.)
+  {
+    muon_y0SG = 2.08;
+    muon_sigySG = 1.;
+  }
+  else if (E == 40.)
+  {
+    muon_y0SG = 2.22;
+    if (strcmp(Process, "jpsi") == 0)
+      muon_sigySG = 0.19; // PYTHIA 50 GeV
+    else
+      muon_sigySG = 1.;
+  }
+  else if (E == 50.)
+  {
+    muon_y0SG = 2.33;
+    if (strcmp(Process, "jpsi") == 0)
+      muon_sigySG = 0.19; // PYTHIA 50 GeV
+  }
+  else if (E == 60.)
+  {
+    muon_y0SG = 2.42;
+    muon_sigySG = 1.;
+  }
+  else if (E == 70.)
+  {
+    muon_y0SG = 2.50;
+    if (strcmp(Process, "jpsi") == 0)
+      muon_sigySG = 0.28; // PYTHIA 70 GeV
+  }
+  else if (E == 80.)
+  {
+    muon_y0SG = 2.57;
+    muon_sigySG = 1.;
+  }
+  else if (E == 90.)
+  {
+    muon_y0SG = 2.63;
+    if (strcmp(Process, "jpsi") == 0)
+      muon_sigySG = 0.33; // PYTHIA 90 GeV
+  }
+  else if (E == 110.)
+  {
+    muon_y0SG = 2.73;
+    if (strcmp(Process, "jpsi") == 0)
+      muon_sigySG = 0.37; // PYTHIA 110 GeV
+  }
+  else if (E == 130.)
+  {
+    muon_y0SG = 2.81;
+    if (strcmp(Process, "jpsi") == 0)
+      muon_sigySG = 0.40; // PYTHIA 130 GeV
+  }
+  else if (E == 150.)
+  {
+    muon_y0SG = 2.88;
+    if (strcmp(Process, "jpsi") == 0)
+      muon_sigySG = 0.42; // PYTHIA 150 GeV
+  }
+  else if (E == 158)
+  {
+    muon_y0SG = 2.9;
+    if (strcmp(Process, "jpsi") == 0)
+      muon_sigySG = 0.42; // PYTHIA
+    else
+      muon_sigySG = 1.2; // NA49
+  }
+  else if (E == 400.)
+  {
+    muon_y0SG = 3.37;
+    muon_sigySG = 1.;
+  }
+
+  if (strcmp(Process, "etaDalitz") == 0)
+  { // eta Dalitz
+    ProcType = 1;
+    generYPtPar = 2;
+    MotherMass = 0.549;
+    if (E == 40.)
+    {
+      muon_TSG = 0.225;
+    }
+    else if (E == 158)
+    {
+      muon_TSG = 0.24;
+    }
+  }
+  else if (strcmp(Process, "eta2Body") == 0)
+  { // eta Dalitz
+    ProcType = 0;
+    generYPtPar = 2;
+    MotherMass = 0.549;
+    if (E == 40.)
+    {
+      muon_TSG = 0.225;
+    }
+    else if (E == 158)
+    {
+      muon_TSG = 0.24;
+    }
+  }
+  else if (strcmp(Process, "rho") == 0)
+  { // rho
+    ProcType = 2;
+    generYPtPar = 3;
+    MotherMass = 0.775;
+    if (E == 40.)
+    {
+      muon_TSG = 0.25;
+    }
+    else if (E == 158)
+    {
+      muon_TSG = 0.29;
+    }
+  }
+  else if (strcmp(Process, "omega2Body") == 0)
+  { // omega 2 body
+    ProcType = 3;
+    generYPtPar = 4;
+    MotherMass = 0.781;
+    if (E == 40.)
+    {
+      muon_TSG = 0.25;
+    }
+    else if (E == 158)
+    {
+      muon_TSG = 0.29;
+    }
+  }
+  else if (strcmp(Process, "omegaDalitz") == 0)
+  { // omega Dalitz
+    ProcType = 4;
+    generYPtPar = 4;
+    MotherMass = 0.781;
+    if (E == 40.)
+    {
+      muon_TSG = 0.25;
+    }
+    else if (E == 158)
+    {
+      muon_TSG = 0.29;
+    }
+  }
+  else if (strcmp(Process, "phi") == 0)
+  { // phi
+    ProcType = 5;
+    generYPtPar = 5;
+    MotherMass = 1.02;
+    if (E == 40.)
+    {
+      muon_TSG = 0.25;
+    }
+    else if (E == 158)
+    {
+      muon_TSG = 0.30; // NA49
+    }
+  }
+  else if (strcmp(Process, "etaPrime") == 0)
+  { // eta prime
+    ProcType = 6;
+    generYPtPar = 6;
+    MotherMass = 0.958;
+    if (E == 40.)
+    {
+      muon_TSG = 0.25;
+    }
+    else if (E == 158)
+    {
+      muon_TSG = 0.29;
+    }
+    // modified June 2019 J/psi parameterizations
+  }
+  else if (strcmp(Process, "jpsi") == 0 || strcmp(Process, "jpsisch") == 0)
+  { // J/psi
+    ProcType = 9;
+    if (strcmp(Process, "jpsi") == 0)
+    {
+      ProcType = 9;
+      generYPtPar = 7;
+    }
+    else if (strcmp(Process, "jpsisch") == 0)
+    {
+      ProcType = 10;
+      generYPtPar = 8;
+    }
+    MotherMass = 3.0969;
+    //     if(E == 40.) {
+    //       TSG = 0.25;
+    //     }
+    //     else if(E == 158){
+    //       TSG = 0.284; //NA50
+    //     }
+    if (E == 150.)
+    {
+      par_p0 = 5.34;
+      par_n = 18.8;
+      par_n2 = 2.70;
+    }
+    else if (E == 130.)
+    {
+      par_p0 = 13.96;
+      par_n = 201.1;
+      par_n2 = 2.58;
+    }
+    else if (E == 110.)
+    {
+      par_p0 = 3.73;
+      par_n = 8.83;
+      par_n2 = 2.84;
+    }
+    else if (E == 90.)
+    {
+      par_p0 = 4.89;
+      par_n = 17.3;
+      par_n2 = 2.80;
+    }
+    else if (E == 70.)
+    {
+      par_p0 = 3.86;
+      par_n = 10.6;
+      par_n2 = 2.92;
+    }
+    else if (E == 50.)
+    {
+      par_p0 = 11.03;
+      par_n = 429.7;
+      par_n2 = 3.27;
+    }
+    else if (E == 40.)
+    { // use same parameter as for E=40 GeV
+      par_p0 = 11.03;
+      par_n = 429.7;
+      par_n2 = 3.27;
+    }
+  }
+
+  if (strcmp(Process, "jpsisch") == 0)
+  { // J/psi
+    ProcType = 10;
+    generYPtPar = 8;
+    MotherMass = 3.0969;
+
+    Double_t a = 13.5;
+    Double_t b = 44.9;
+    p4_xF = muon_y0SG;
+    p1_xF = 3.096; // mjpsi
+    if (E == 150.)
+    {
+      p2_xF = 16.8; // sqrts
+    }
+    else if (E == 130.)
+    {
+      p2_xF = 15.7;
+    }
+    else if (E == 110.)
+    {
+      p2_xF = 14.4;
+    }
+    else if (E == 90.)
+    {
+      p2_xF = 13.1;
+    }
+    else if (E == 70.)
+    {
+      p2_xF = 11.5;
+    }
+    else if (E == 50.)
+    {
+      p2_xF = 9.77;
+    }
+    else if (E == 40.)
+    {
+      p2_xF = 8.76;
+    }
+    p3_xF = a / (1 + b / p2_xF);
+    // printf("p1_xF=%f, p2_xF=%f, p3_xF=%f, p4_xF=%f\n", p1_xF, p2_xF, p3_xF, p4_xF);
+  }
+
+  // printf("Generating %s\n", Process);
+  // printf("Particle mass = %f\n", MotherMass);
+  // printf("Inverse slope = %f\n", TSG);
+  // printf("rapidity sigma = %f\n", sigySG);
 }
