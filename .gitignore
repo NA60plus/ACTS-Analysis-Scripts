@@ -14,3 +14,9 @@ GenMUONLMR_cxx.so
 
 bfield/*.root
 bfield/*.txt
+
+*.png
+*.root
+*.txt
+*.out
+output*
