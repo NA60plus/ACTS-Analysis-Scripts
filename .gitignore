@@ -10,3 +10,7 @@ event_generator_C.so
 GenMUONLMR_cxx_ACLiC_dict_rdict.pcm 
 GenMUONLMR_cxx.d
 GenMUONLMR_cxx.so   
+
+
+bfield/*.root
+bfield/*.txt
