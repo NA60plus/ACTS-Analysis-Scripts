@@ -16,6 +16,7 @@ from acts import UnitConstants as u
 from acts.examples.simulation import (
     addParticleReader,
     addFatras,
+    addSimHitsReader,
     addGeant4,
     ParticleSelectorConfig,
     addDigitization,
@@ -177,6 +178,13 @@ def getArgumentParser():
         "-pro",
         "--projective",
         dest="projective",
+        help="Remove bkg",
+        action="store_true",
+    )
+    parser.add_argument(
+        "-fl",
+        "--fluka",
+        dest="fluka",
         help="Remove bkg",
         action="store_true",
     )
@@ -425,7 +433,8 @@ def runFullChain(
     cutOffTrackWeight=0,
     cutOffTrackWeightReassign=0,
     rejectedFraction=0.9,
-    perigeeZ = 400
+    perigeeZ = 400,
+    addFluka = False
 ):
 
     field = acts.examples.MagneticFieldMapXyz("bfield/BFieldNA60plus_longsetup.txt")
@@ -457,6 +466,11 @@ def runFullChain(
         det_suffix = "_ms"
     )
 
+    addSimHitsReader(
+        s,
+        inputDir="/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/event_generation/bkghits_40GeV_vt",
+        outputSimHits="simhittest",
+    )
     addFatras(
         s,
         trackingGeometryVT,
@@ -467,10 +481,13 @@ def runFullChain(
             pt=(100 * u.MeV, None),
             removeNeutral=True,
         ),
+        enableInteractions=True,
         outputDirRoot=outputDir,
+        #outputDirCsv=outputDir,
         outputParticlesInitial="particles_initial_vt",
         outputParticlesFinal="particles_final_vt",
         outputSimHits="simhits_vt",
+        inputSimHits="simhittest" if addFluka else None,
         det_suffix="_vt",
     )
 
@@ -485,13 +502,14 @@ def runFullChain(
             removeNeutral=True,
         ),
         outputDirRoot=outputDir,
+        #outputDirCsv=outputDir,
+        enableInteractions=True,
         inputParticles = "particles_input_ms",
         outputParticlesInitial="particles_initial_ms",
         outputParticlesFinal="particles_final_ms",
         outputSimHits="simhits_ms",
         det_suffix="_ms",
     )
-
     addDigitization(
         s,
         trackingGeometryVT,
@@ -1071,7 +1089,7 @@ def runFullChain(
         doTrkVtx=False,  # switch of the vertexing with the tracklets
         inputParticles="particles_ms",
         verbose=True,
-        initialVarInflation = [1,1,1,1,1000,1]
+        initialVarInflation = [50., 50., 10., 10., 10., 10.]
     )
 
     addCKFTracks(
@@ -1094,7 +1112,6 @@ def runFullChain(
         inputSourceLinks="sourcelinks_ms",
         inputMeasurements="measurements_ms",
         suffixIn="ms",
-        suffix="ms",
         suffixOut="ms",
         det_suffix="_ms",
     )
@@ -1291,9 +1308,12 @@ if "__main__" == __name__:
     dirVT = "event_generation/events_40GeV_Sec_realTarget_beamSigma_0.500000_jpsi_muons"
 
 
+
+
+    dirMS = "event_generation/events_158GeV_Sec_jpsi_muons"
+    dirVT = "event_generation/events_158GeV_Sec_jpsi"
     dirMS = "event_generation/events_40GeV_Sec_realTarget_beamSigma_0.500000_jpsi_muons"
     dirVT = "event_generation/events_40GeV_Sec_realTarget_beamSigma_0.500000_jpsi"
-    
 
     inputDirVT = pathlib.Path.cwd() / dirVT
     inputDirMS = pathlib.Path.cwd() / dirMS
@@ -1372,6 +1392,8 @@ if "__main__" == __name__:
 
     if options.sf_maxVertices != 1:
         suffix += "_nVtxMax" + str(options.sf_maxVertices)
+    if options.fluka:
+        suffix += "_fluka"
 
     suffix += "_twosteps_rej" + str(options.sf_rejectedFraction)
     suffix += "_perigeeZ"+str(options.vz)
@@ -1403,13 +1425,13 @@ if "__main__" == __name__:
     )
 
     matDeco = acts.IMaterialDecorator.fromFile(
-        "geomMuons/material-map_muons_longsetup.json"
+        "geomMuonsLongSetup/material-map_muons_longsetup.json"
     )
-    jsonFile = "geomMuons/tgeo-config_muons_longsetup.json"
-    tgeo_fileName = "geomMuons/geom_muons_longsetup.root"
+    jsonFile = "geomMuonsLongSetup/tgeo-config_muons_longsetup.json"
+    tgeo_fileName = "geomMuonsLongSetup/geom_muons_longsetup.root"
 
-    jsonDigiMS = "geomMuons/digismearMS.json"
-    jsonSeedMS = "geomMuons/seed_configMS.json"
+    jsonDigiMS = "geomMuonsLongSetup/digismearMS.json"
+    jsonSeedMS = "geomMuonsLongSetup/seed_configMS.json"
 
     detectorMS, trackingGeometryMS, decoratorsMS = TGeoDetector.create(
         jsonFile=str(jsonFile),
@@ -1466,7 +1488,8 @@ if "__main__" == __name__:
         cutOffTrackWeight=options.sf_cutOffTrackWeight,
         cutOffTrackWeightReassign=options.sf_cutOffTrackWeightReassign,
         rejectedFraction=options.sf_rejectedFraction,
-        perigeeZ = options.vz
+        perigeeZ = options.vz,
+        addFluka=options.fluka
     ).run()
     end_time = time.time()
 
