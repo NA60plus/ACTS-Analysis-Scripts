@@ -263,8 +263,8 @@ void bkg_generator(int nev = -1, int Eint = 40)
           fclose(fpcsv_vt);
           fclose(fpcsv_ms);
           fclose(fpcsv_vt_ms);
-          int evTmp = eventNumber;
           eventNumber++;
+          int evTmp = eventNumber;
           if (eventNumber == nev)
           {
             check->Close();
@@ -288,9 +288,9 @@ void bkg_generator(int nev = -1, int Eint = 40)
           fpcsv_ms = fopen(csvname_ms, "w");
           fpcsv_vt_ms = fopen(csvname_vt_ms, "w");
 
-          fprintf(fpcsv_vt, "particle_id,geometry_id,tx,ty,tz,tt,tpx,tpy,tpz,te,deltapx,deltapy,deltapz,deltae,index");
-          fprintf(fpcsv_ms, "particle_id,geometry_id,tx,ty,tz,tt,tpx,tpy,tpz,te,deltapx,deltapy,deltapz,deltae,index");
-          fprintf(fpcsv_vt_ms, "particle_id,geometry_id,tx,ty,tz,tt,tpx,tpy,tpz,te,deltapx,deltapy,deltapz,deltae,index");
+          fprintf(fpcsv_vt, "particle_id,geometry_id,tx,ty,tz,tt,tpx,tpy,tpz,te,deltapx,deltapy,deltapz,deltae,index\n");
+          fprintf(fpcsv_ms, "particle_id,geometry_id,tx,ty,tz,tt,tpx,tpy,tpz,te,deltapx,deltapy,deltapz,deltae,index\n");
+          fprintf(fpcsv_vt_ms, "particle_id,geometry_id,tx,ty,tz,tt,tpx,tpy,tpz,te,deltapx,deltapy,deltapz,deltae,index\n");
         }
         else
         {
@@ -334,6 +334,10 @@ void bkg_generator(int nev = -1, int Eint = 40)
             float pz = p*cosz;
             
             int surface = getSurface(lineValues[0]);
+            if(surface==0){
+              std::cout<<line<<std::endl;
+              continue;
+            }
             int surface_ms = getSurface(lineValues[0])-10;
             if (z < zMS)
             {
