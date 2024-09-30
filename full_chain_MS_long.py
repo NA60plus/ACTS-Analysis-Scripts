@@ -53,13 +53,13 @@ inputDir = (
     pathlib.Path.cwd() / "event_generation/events_40GeV_noBkg_jpsi_muons"
 )
 
-outputDir = pathlib.Path.cwd() / "fullchainMS_output"
+outputDir = pathlib.Path.cwd() / "output/fullchainMS_output"
 
 matDeco = acts.IMaterialDecorator.fromFile(
-    "geomMuonsLongSetup/material-map_muons_longsetup.json"
+    "geometry/geomMuonsLongSetup/material-map_muons_longsetup.json"
 )
-jsonFile = "geomMuonsLongSetup/tgeo-config_muons_longsetup.json"
-tgeo_fileName = "geomMuonsLongSetup/geom_muons_longsetup.root"
+jsonFile = "geometry/geomMuonsLongSetup/tgeo-config_muons_longsetup.json"
+tgeo_fileName = "geometry/geomMuonsLongSetup/geom_muons_longsetup.root"
 
 logLevel = acts.logging.VERBOSE
 customLogLevel = acts.examples.defaultLogging(logLevel=logLevel)
@@ -115,7 +115,7 @@ addDigitization(
     s,
     trackingGeometry,
     field,
-    digiConfigFile="geomMuonsLongSetup/digismearMS.json",
+    digiConfigFile="geometry/geomMuonsLongSetup/digismearMS.json",
     applyHole=False,
     outputDirRoot=outputDir,
     rnd=rnd,
@@ -244,7 +244,7 @@ addSeeding(
     #      seedingAlgorithm=SeedingAlgorithm.TruthEstimated,
     #    seedingAlgorithm=SeedingAlgorithm.Orthogonal,
     seedingAlgorithm=SeedingAlgorithm.Default,
-    geoSelectionConfigFile="geomMuonsLongSetup/seed_configMS.json",
+    geoSelectionConfigFile="geometry/geomMuonsLongSetup/seed_configMS.json",
     outputDirRoot=outputDir,
     logLevel=acts.logging.DEBUG,
     noGuessing=True,

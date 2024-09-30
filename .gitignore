@@ -19,4 +19,5 @@ bfield/*.txt
 *.root
 *.txt
 *.out
-output*
+geometry/geomMuonsLongSetup/*
+geometry/geomVTNA60p/*        
