@@ -33,10 +33,13 @@ from acts.examples.reconstruction import (
     addUsedMeasurementsFilter,
     TrackSelectorConfig,
     addAmbiguityResolution,
+    addContainerMerger,
     AmbiguityResolutionConfig,
     addVertexFitting,
+    addSecondaryVertexFitting,
     VertexFinder,
     CkfConfig,
+    addMatching
 )
 from acts.examples import TGeoDetector
 
@@ -103,6 +106,37 @@ def getArgumentParser():
     parser.add_argument(
         '-gu',
         '--noguessing',
+        help='No secondary particles',
+        action='store_true'
+    )
+
+
+    parser.add_argument(
+        '-sec',
+        '--sec',
+        help='No secondary particles',
+        action='store_true'
+    )
+
+    parser.add_argument(
+        '-osec',
+        '--osec',
+        help='No secondary particles',
+        action='store_true'
+    )
+
+
+    parser.add_argument(
+        '-zz',
+        '--zz',
+        help='No secondary particles',
+        action='store_true'
+    )
+
+
+    parser.add_argument(
+        '-t0',
+        '--t0',
         help='No secondary particles',
         action='store_true'
     )
@@ -187,14 +221,49 @@ def getArgumentParser():
     ##
     #################
     """
-    python3 full_chain_vt.py -n100 -d -per 0.01 > test_per0.01.out &&
-    python3 full_chain_vt.py -n100 -d -per 0.05 > test_per0.05.out &&
-    python3 full_chain_vt.py -n100 -d -per 0.1 > test_per0.1.out &&
-    python3 full_chain_vt.py -n100 -d -per 0.2 > test_per0.2.out &&
-    python3 full_chain_vt.py -n100 -d -per 0.4 > test_per0.4.out &&
-    python3 full_chain_vt.py -n100 -d -per 0.8 > test_per0.8.out &&
-    python3 full_chain_vt.py -n100 -d -per 0.6 > test_per0.6.out &&
-    python3 full_chain_vt.py -n100 -d         > testcentral.out
+    python3 full_chain_vt.py -n1000 -d -per 0.01 > test_per0.01.out &&
+
+    python3 full_chain_vt.py -n1000 -d -sec -per 0.01 > test_sec_per0.01.out &&
+
+    python3 full_chain_vt.py -n1000 -d -per 0.02 > test_per0.02_rej0.114.out &&
+    python3 full_chain_vt.py -n1000 -d -per 0.05 > test_per0.05_rej0.114.out &&
+    python3 full_chain_vt.py -n1000 -d -per 0.1 > test_per0.1_rej0.114.out &&
+    python3 full_chain_vt.py -n1000 -d -per 0.2 > test_per0.2_rej0.114.out &&
+    python3 full_chain_vt.py -n1000 -d -per 0.4 > test_per0.4_rej0.114.out &&
+    python3 full_chain_vt.py -n1000 -d -per 0.6 > test_per0.6_rej0.114.out &&
+    python3 full_chain_vt.py -n1000 -d -per 0.8 > test_per0.8_rej0.114.out &&
+    python3 full_chain_vt.py -n1000 -d         > test_central_rej0.114.out
+
+    python3 full_chain_vt.py -n1000 -d -sec -per 0.02 > test_sec_per0.02_rej0.114.out &&
+    python3 full_chain_vt.py -n1000 -d -sec -per 0.05 > test_sec_per0.05_rej0.114.out &&
+    python3 full_chain_vt.py -n1000 -d -sec -per 0.1 > test_sec_per0.1_rej0.114.out &&
+    python3 full_chain_vt.py -n1000 -d -sec -per 0.2 > test_sec_per0.2_rej0.114.out &&
+    python3 full_chain_vt.py -n1000 -d -sec -per 0.4 > test_sec_per0.4_rej0.114.out &&
+    python3 full_chain_vt.py -n1000 -d -sec -per 0.6 > test_sec_per0.6_rej0.114.out &&
+    python3 full_chain_vt.py -n1000 -d -sec -per 0.8 > test_sec_per0.8_rej0.114.out &&
+    python3 full_chain_vt.py -n1000 -d -sec         > test_sec_central_rej0.114.out
+
+    python3 full_chain_vt.py -n1000 -d --sf_rejectedFraction 0 -per 0.02 > test_per0.02_rej0.out &&
+    python3 full_chain_vt.py -n1000 -d --sf_rejectedFraction 0 -per 0.05 > test_per0.05_rej0.out &&
+    python3 full_chain_vt.py -n1000 -d --sf_rejectedFraction 0 -per 0.1 > test_per0.1_rej0.out &&
+    python3 full_chain_vt.py -n1000 -d --sf_rejectedFraction 0 -per 0.2 > test_per0.2_rej0.out &&
+    python3 full_chain_vt.py -n1000 -d --sf_rejectedFraction 0 -per 0.4 > test_per0.4_rej0.out &&
+    python3 full_chain_vt.py -n1000 -d --sf_rejectedFraction 0 -per 0.6 > test_per0.6_rej0.out &&
+    python3 full_chain_vt.py -n1000 -d --sf_rejectedFraction 0 -per 0.8 > test_per0.8_rej0.out &&
+    python3 full_chain_vt.py -n1000 -d --sf_rejectedFraction 0         > test_central_rej0.out
+
+    python3 full_chain_vt.py -n1000 -d --sf_rejectedFraction 0 -sec -per 0.02 > test_sec_per0.02_rej0.out &&
+    python3 full_chain_vt.py -n1000 -d --sf_rejectedFraction 0 -sec -per 0.05 > test_sec_per0.05_rej0.out &&
+    python3 full_chain_vt.py -n1000 -d --sf_rejectedFraction 0 -sec -per 0.1 > test_sec_per0.1_rej0.out &&
+    python3 full_chain_vt.py -n1000 -d --sf_rejectedFraction 0 -sec -per 0.2 > test_sec_per0.2_rej0.out &&
+    python3 full_chain_vt.py -n1000 -d --sf_rejectedFraction 0 -sec -per 0.4 > test_sec_per0.4_rej0.out &&
+    python3 full_chain_vt.py -n1000 -d --sf_rejectedFraction 0 -sec -per 0.6 > test_sec_per0.6_rej0.out &&
+    python3 full_chain_vt.py -n1000 -d --sf_rejectedFraction 0 -sec -per 0.8 > test_sec_per0.8_rej0.out &&
+    python3 full_chain_vt.py -n1000 -d --sf_rejectedFraction 0 -sec         > test_sec_central_rej0.out
+
+    python3 full_chain_vt.py -n1000 -d -sec -per 0.02 > test.out &&
+
+
     """
     #########################
     parser.add_argument(
@@ -282,16 +351,118 @@ def getArgumentParser():
         default=-1,
     )
 
+    #for vtx optimization
+    #  significanceCutSeeding
+    #  maximumChi2cutForSeeding
+    #  maxVertices
+    #  SplitVertices
+    #  splitVerticesTrkInvFraction
+    #  reassignTracksAfterFirstFit
+    #  doMaxTracksCut
+    #  maxTracks
+    #  cutOffTrackWeight
+    #  cutOffTrackWeightReassign
+
+    parser.add_argument(
+        "--sf_cutOffTrackWeight",
+        dest="sf_cutOffTrackWeight",
+        help="",
+        type=float,
+        default=0.01,
+    )
+
+    parser.add_argument(
+        "--sf_cutOffTrackWeightReassign",
+        dest="sf_cutOffTrackWeightReassign",
+        help="",
+        type=float,
+        default=1,
+    )
+
+    parser.add_argument(
+        "--sf_significanceCutSeeding",
+        dest="sf_significanceCutSeeding",
+        help="",
+        type=float,
+        default=10, #0.06758286918225764,
+    )
+
+    parser.add_argument(
+        "--sf_maximumChi2cutForSeeding",
+        dest="sf_maximumChi2cutForSeeding",
+        help="",
+        type=float,
+        default=36,
+    )
+
+    parser.add_argument(
+        "--sf_maxVertices",
+        dest="sf_maxVertices",
+        help="",
+        type=int,
+        default=1,
+    )
+
+    parser.add_argument(
+        "--sf_createSplitVertices",
+        dest="sf_createSplitVertices",
+        help="",
+        type=bool,
+        default=False,
+    )
+
+    parser.add_argument(
+        "--sf_reassignTracksAfterFirstFit",
+        dest="sf_reassignTracksAfterFirstFit",
+        help="",
+        type=bool,
+        default=False,
+    )
+
+    parser.add_argument(
+        "--sf_doMaxTracksCut",
+        dest="sf_doMaxTracksCut",
+        help="",
+        type=bool,
+        default=False,
+    )
+
+    parser.add_argument(
+        "--sf_splitVerticesTrkInvFraction",
+        dest="sf_splitVerticesTrkInvFraction",
+        help="",
+        type=int,
+        default=2,
+    )
+
+    parser.add_argument(
+        "--sf_maxTracks",
+        dest="sf_maxTracks",
+        help="",
+        type=int,
+        default=5000,
+    )
+
+    parser.add_argument(
+        "--sf_rejectedFraction",
+        dest="sf_rejectedFraction",
+        help="",
+        type=float,
+        default=0.114,
+    )
+
+
+
     return parser
 
 
-def runCKFTracks(
+def runVTchain(
     detector,
     trackingGeometry,
     inputDir: Path,
     outputDir: Path,
-    jsonDigi="geomVTNA60p/digismear.json",
-    jsonSeed="geomVTNA60p/seed_config.json",
+    jsonDigi="geometry/geomVTNA60p/digismear.json",
+    jsonSeed="geometry/geomVTNA60p/seed_config.json",
     useGeant4=False,
     truthSeeding=False,
     applyDeadZones=False,
@@ -321,7 +492,19 @@ def runCKFTracks(
     trkVtxOnly=False,
     addDeltas=True,
     projective=False,
-    zPerigee=0
+    zPerigee=0,
+    significanceCutSeeding=0,
+    maximumChi2cutForSeeding=0,
+    maxVertices=0,
+    createSplitVertices=0,
+    splitVerticesTrkInvFraction=0,
+    reassignTracksAfterFirstFit=0,
+    doMaxTracksCut=0,
+    maxTracks=0,
+    cutOffTrackWeight=0,
+    cutOffTrackWeightReassign=0,
+    rejectedFraction=0.9,
+
 ):
 
     field = acts.ConstantBField(acts.Vector3(
@@ -441,14 +624,13 @@ def runCKFTracks(
             # min and max R between Middle and Top SP
             deltaYTopSP=(10 * u.mm, 1000 * u.mm),
             # min and max R between Middle and Bottom SP
-            deltaYBottomSP=(10 * u.mm, 100 * u.mm),
-            impactMax=0.5 * u.mm,
+            impactMax=ImpactMax * u.mm,
             deltaZMax=5 * u.mm,  # was 5
             minPt=100 * u.MeV,
             #interactionPointCut=True,
             interactionPointCut=True,
             verbose=verbose,
-            collisionRegion=(-0.5 * u.mm, 0.5 * u.mm),  # 0.5
+            collisionRegion=(-ImpactMax * u.mm, ImpactMax * u.mm),  # 0.5
             # NOT USED??? seems to be used in Orthogonal seeding
             y=(0 * u.mm, 400 * u.mm),
             yMiddle=(139 * u.mm, 170 * u.mm), #use only layer 2 and 3
@@ -509,16 +691,7 @@ def runCKFTracks(
         suffixOut = "ambi"
     )
 
-    """
-    addVertexFitting(
-        s,
-        field,
-        vertexFinder=VertexFinder.AMVF, #Iterative,
-        outputDirRoot=outputDir,
-        suffixIn= "ambi"
-    )
-    """
-
+    
     #########
     # STEP 2
     #########
@@ -612,7 +785,41 @@ def runCKFTracks(
         suffixIn = "ll",
         suffixOut = "ambill"
     )
+    
+    addContainerMerger(
+        s,
+        inputTrackParameters=["ambitrackpars","ambilltrackpars"],
+        outputTrackParameters="mergedtrackpars"   
+    )
+    
+    addVertexFitting(
+        s,
+        field,
+        vertexFinder=VertexFinder.Iterative,
+        outputDirRoot=outputDir,
+        suffixIn= "ambi",
+        trackParameters="mergedtrackpars",
+        outputProtoVertices= "protoverticesmerged",
+        outputVertices= "fittedVerticesmerged",
+        suffixOut = "_merged",
+        logLevel=acts.logging.Level.DEBUG,
+        significanceCutSeeding=significanceCutSeeding,
+        maximumChi2cutForSeeding=maximumChi2cutForSeeding,
+        maxVertices=maxVertices,
+        createSplitVertices=createSplitVertices,
+        splitVerticesTrkInvFraction=splitVerticesTrkInvFraction,
+        reassignTracksAfterFirstFit=reassignTracksAfterFirstFit,
+        doMaxTracksCut=doMaxTracksCut,
+        maxTracks=maxTracks,
+        cutOffTrackWeight=cutOffTrackWeight,
+        cutOffTrackWeightReassign=cutOffTrackWeightReassign,
+        rejectedFraction=rejectedFraction
+        
+    )
+    
 
+    
+    
     #########
     # STEP 3
     #########
@@ -799,8 +1006,50 @@ def runCKFTracks(
         suffixOut = "ambillllll"
     )
     
-    return s
 
+    addVertexFitting(
+        s,
+        field,
+        vertexFinder=VertexFinder.Iterative,
+        outputDirRoot=outputDir,
+        suffixIn= "ambi",
+        trackParameters="ambitrackpars",
+        outputProtoVertices= "protoverticesstep1",
+        outputVertices= "fittedVerticesstep1",
+        suffixOut = "_step1",
+        logLevel=acts.logging.Level.DEBUG,
+        significanceCutSeeding=significanceCutSeeding,
+        maximumChi2cutForSeeding=maximumChi2cutForSeeding,
+        maxVertices=maxVertices,
+        createSplitVertices=createSplitVertices,
+        splitVerticesTrkInvFraction=splitVerticesTrkInvFraction,
+        reassignTracksAfterFirstFit=reassignTracksAfterFirstFit,
+        doMaxTracksCut=doMaxTracksCut,
+        maxTracks=maxTracks,
+        cutOffTrackWeight=cutOffTrackWeight,
+        cutOffTrackWeightReassign=cutOffTrackWeightReassign,
+        rejectedFraction=rejectedFraction
+        
+    )
+    """
+
+
+    addContainerMerger(
+        s,
+        inputTrackParameters=["ambitrackpars","ambilltrackpars","ambilllltrackpars","ambilllllltrackpars"],
+        outputTrackParameters="mergedlltrackpars"   
+    )
+    addSecondaryVertexFitting(
+        s,
+        field,
+        trackParameters="mergedlltrackpars",
+        outputProtoVertices = "protoverticestest",
+        outputMasses = "masses",
+        outputDirRoot=outputDir,
+        logLevel=acts.logging.Level.DEBUG
+    )
+    """
+    return s
 
 def copy_py_file(source_file, destination_dir):
     # Check if the source file is a Python file
@@ -836,12 +1085,23 @@ if "__main__" == __name__:
 
     dir = "event_generation/events_"+str(Eint)+"GeV"+event_type
 
-    target_option = "_onlyTarget_"+str(options.target) if options.target!=-1 else "_realTarget"
 
-    if options.periferal != 1:
-        dir = "event_generation/events_40GeV_Sec"+target_option+"_beamSigma_0.500000_periferal_factor_"+str(options.periferal)+("00000" if options.periferal >= 0.1 else "0000")
+    target_option = "_onlyTarget_"+str(options.target) if options.target!=-1 else "_realTarget"
+    has_sec = ""
+    if options.sec:
+        has_sec = "_Sec"
+    if options.osec:
+        has_sec = "_noBkg_Sec"
+    if options.zz:
+        beamsize = "0.000000"
     else:
-        dir = "event_generation/events_40GeV_Sec"+target_option+"_beamSigma_0.500000"
+        beamsize = "0.500000"
+    if options.periferal != 1:
+        dir = "event_generation/events_40GeV"+has_sec+target_option+"_beamSigma_"+beamsize+"_periferal_factor_"+str(options.periferal)+("00000" if options.periferal >= 0.1 else "0000")
+    else:
+        dir = "event_generation/events_40GeV"+has_sec+target_option+"_beamSigma_"+beamsize+""
+
+    #dir ="event_generation/events_40GeV_Sec_periferal_factor_0.100000"
 
     inputDir = pathlib.Path.cwd() / dir
     suffix = "_newSeeding"
@@ -887,20 +1147,39 @@ if "__main__" == __name__:
         suffix += "_projective"
     if options.periferal != 1:
         suffix += "_periferal_factor_"+str(options.periferal)
+    suffix += "_onlyTarget_"+str(options.target) if options.target!=-1 else "_realTarget"
+    if options.sec:
+        suffix += "_Sec"
+    if options.osec:
+        suffix += "_onlySec"
+    if options.zz:
+        suffix += "_beam0.0"
+    else:
+        suffix += "_beam0.5"
+    if options.periferal != 1:
+        dir = "event_generation/events_40GeV"+has_sec+target_option+"_beamSigma_"+beamsize+"_periferal_factor_"+str(options.periferal)+("00000" if options.periferal >= 0.1 else "0000")
+    else:
+        dir = "event_generation/events_40GeV"+has_sec+target_option+"_beamSigma_"+beamsize+""
+
+    if options.sf_maxVertices != 1:
+        suffix += "_nVtxMax"+str(options.sf_maxVertices)
+
+    suffix += "_twosteps_rej"+str(options.sf_rejectedFraction)
+    suffix += "_suffix"
 
     current_dir = pathlib.Path.cwd()
     if options.outdir:
         outputDir = options.outdir
     else:
-        outputDir = str(current_dir / ("output_"+str(Eint)+"GeV" + event_type + suffix))
+        outputDir = str(current_dir / ("output/output_"+str(Eint)+"GeV" + event_type + suffix))
 
     matDeco = acts.IMaterialDecorator.fromFile(
-        "geomVTNA60p/material-map_VTNA60p.json")
-    jsonFile = "geomVTNA60p/tgeo-config_VTNA60p.json"
-    tgeo_fileName = "geomVTNA60p/geom_VTNA60p.root"
-    jsonDigi = "geomVTNA60p/digismear0.005.json"
+        "geometry/geomVTNA60p/material-map_VTNA60p.json")
+    jsonFile = "geometry/geomVTNA60p/tgeo-config_VTNA60p.json"
+    tgeo_fileName = "geometry/geomVTNA60p/geom_VTNA60p.root"
+    jsonDigi = "geometry/geomVTNA60p/digismear0.005.json"
 
-    jsonSeed = "geomVTNA60p/seed_config_2_4_6_8_10.json"
+    jsonSeed = "geometry/geomVTNA60p/seed_config_2_4_6_8_10.json"
     print(jsonSeed)
     logLevel = acts.logging.INFO
     customLogLevel = acts.examples.defaultLogging(logLevel=logLevel)
@@ -916,7 +1195,7 @@ if "__main__" == __name__:
 
     start_time = time.time()
 
-    runCKFTracks(
+    runVTchain(
         detector,
         trackingGeometry,
         inputDir=inputDir,
@@ -945,7 +1224,18 @@ if "__main__" == __name__:
         trkVtxOnly=options.trkVtxOnly,
         addDeltas=options.addDeltas,
         projective=options.projective,
-        zPerigee=options.zperigee
+        zPerigee=options.zperigee,
+        significanceCutSeeding=options.sf_significanceCutSeeding,
+        maximumChi2cutForSeeding=options.sf_maximumChi2cutForSeeding,
+        maxVertices=options.sf_maxVertices,
+        createSplitVertices=options.sf_createSplitVertices,
+        splitVerticesTrkInvFraction=options.sf_splitVerticesTrkInvFraction,
+        reassignTracksAfterFirstFit=options.sf_reassignTracksAfterFirstFit,
+        doMaxTracksCut=options.sf_doMaxTracksCut,
+        maxTracks=options.sf_maxTracks,
+        cutOffTrackWeight=options.sf_cutOffTrackWeight,
+        cutOffTrackWeightReassign=options.sf_cutOffTrackWeightReassign,
+        rejectedFraction=options.sf_rejectedFraction
 
     ).run()
     end_time = time.time()

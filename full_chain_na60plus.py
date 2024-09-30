@@ -162,9 +162,6 @@ def getArgumentParser():
         action="store_true",
     )
 
-    parser.add_argument(
-        "-del", "--addDeltas", dest="addDeltas", help="Remove bkg", action="store_true"
-    )
 
     parser.add_argument(
         "-per",
@@ -419,7 +416,6 @@ def runFullChain(
     KeepSecondary=True,
     noGuessing=False,
     trkVtxOnly=False,
-    addDeltas=True,
     projective=False,
     zPerigee=0,
     significanceCutSeeding=0,
@@ -674,7 +670,6 @@ def runFullChain(
         verbose=False,
         noGuessing=False,  # noGuessing,
         trkVtxOnly=trkVtxOnly,
-        addDeltas=addDeltas,
         projective=projective,
         zPerigee=zPerigee,
         inputSourceLinks="sourcelinks_vt",
@@ -1352,8 +1347,6 @@ if "__main__" == __name__:
         suffix += "_z" + str(options.zperigee)
     if options.trkVtxOnly:
         suffix += "_trkVtxOnly"
-    if options.addDeltas:
-        suffix += "_addDeltas"
     if options.projective:
         suffix += "_projective"
     if options.periferal != 1:
@@ -1404,14 +1397,14 @@ if "__main__" == __name__:
         outputDir = options.outdir
     else:
         outputDir = str(
-            current_dir / ("output_" + str(Eint) + "GeV" + event_type + suffix)
+            current_dir / ("output/output_" + str(Eint) + "GeV" + event_type + suffix)
         )
 
-    matDeco = acts.IMaterialDecorator.fromFile("geomVTNA60p/material-map_VTNA60p.json")
-    jsonFile = "geomVTNA60p/tgeo-config_VTNA60p.json"
-    tgeo_fileName = "geomVTNA60p/geom_VTNA60p.root"
-    jsonDigiVT = "geomVTNA60p/digismear0.005.json"
-    jsonSeedVT = "geomVTNA60p/seed_config_2_4_6_8_10.json"
+    matDeco = acts.IMaterialDecorator.fromFile("geometry/geomVTNA60p/material-map_VTNA60p.json")
+    jsonFile = "geometry/geomVTNA60p/tgeo-config_VTNA60p.json"
+    tgeo_fileName = "geometry/geomVTNA60p/geom_VTNA60p.root"
+    jsonDigiVT = "geometry/geomVTNA60p/digismear0.005.json"
+    jsonSeedVT = "geometry/geomVTNA60p/seed_config_2_4_6_8_10.json"
     logLevel = acts.logging.INFO
     customLogLevel = acts.examples.defaultLogging(logLevel=logLevel)
 
@@ -1425,13 +1418,13 @@ if "__main__" == __name__:
     )
 
     matDeco = acts.IMaterialDecorator.fromFile(
-        "geomMuonsLongSetup/material-map_muons_longsetup.json"
+        "geometry/geomMuonsLongSetup/material-map_muons_longsetup.json"
     )
-    jsonFile = "geomMuonsLongSetup/tgeo-config_muons_longsetup.json"
-    tgeo_fileName = "geomMuonsLongSetup/geom_muons_longsetup.root"
+    jsonFile = "geometry/geomMuonsLongSetup/tgeo-config_muons_longsetup.json"
+    tgeo_fileName = "geometry/geomMuonsLongSetup/geom_muons_longsetup.root"
 
-    jsonDigiMS = "geomMuonsLongSetup/digismearMS.json"
-    jsonSeedMS = "geomMuonsLongSetup/seed_configMS.json"
+    jsonDigiMS = "geometry/geomMuonsLongSetup/digismearMS.json"
+    jsonSeedMS = "geometry/geomMuonsLongSetup/seed_configMS.json"
 
     detectorMS, trackingGeometryMS, decoratorsMS = TGeoDetector.create(
         jsonFile=str(jsonFile),
@@ -1474,7 +1467,6 @@ if "__main__" == __name__:
         KeepSecondary=not options.secondary,
         noGuessing=options.noguessing,
         trkVtxOnly=options.trkVtxOnly,
-        addDeltas=options.addDeltas,
         projective=options.projective,
         zPerigee=options.zperigee,
         significanceCutSeeding=options.sf_significanceCutSeeding,
