@@ -201,11 +201,11 @@ void bkg_generator(int nev = -1, int Eint = 40)
   char csvname_ms[80];
   char csvname_vt_ms[80];
 
-  std::string directoryPath = "fluka_" + std::to_string(Eint)+ "GeV";
+  std::string directoryPath = "inputData/fluka_" + std::to_string(Eint)+ "GeV";
 
-  std::string directoryName_vt = "bkghits_" + std::to_string(Eint) + "GeV_vt";
-  std::string directoryName_ms = "bkghits_" + std::to_string(Eint) + "GeV_ms";
-  std::string directoryName_vt_ms = "bkghits_" + std::to_string(Eint) + "GeV_vt_ms";
+  std::string directoryName_vt = "simulatedEvents/bkghits_" + std::to_string(Eint) + "GeV_vt";
+  std::string directoryName_ms = "simulatedEvents/bkghits_" + std::to_string(Eint) + "GeV_ms";
+  std::string directoryName_vt_ms = "simulatedEvents/bkghits_" + std::to_string(Eint) + "GeV_vt_ms";
 
   if (!fs::exists(directoryName_vt))
     bool created = fs::create_directory(directoryName_vt);
@@ -297,6 +297,14 @@ void bkg_generator(int nev = -1, int Eint = 40)
           // FLUKA format
           // setup element - particle id - int.origin - etot - x - y - z - director cosines
           // PixStn2            3 AbsoPlu1   9.07811627E-04   14.2597504 -10.3486423       20.1179695       3.07518914E-02 6.16198704E-02 0.997625828
+          // ACTS hit format
+          // particle_id,geometry_id,tx,ty,tz,tt,tpx,tpy,tpz,te,deltapx,deltapy,deltapz,deltae,index
+          // 5156621573355995136,72057731476881664,0.307201,-1.999749,3000.000000,0.000000,-182.768341,-211.306107,91.450699,293.969513,0.000000,0.000000,0.000000,0.000000,0
+          // tx,ty,tz,tt = hit coordinates
+          // tpx,tpy,tpz,te = particle momentum and energy 
+          // deltapx,deltapy,deltapz,deltae = variation of momentum and energy
+          //
+          // always a new particles id
 
           std::string value;
           std::vector<std::string> lineValues;
@@ -335,12 +343,15 @@ void bkg_generator(int nev = -1, int Eint = 40)
             
             int surface = getSurface(lineValues[0]);
             if(surface==0){
-              std::cout<<line<<std::endl;
               continue;
             }
             int surface_ms = getSurface(lineValues[0])-10;
+
             if (z < zMS)
             {
+              if(flukacode!=3 && flukacode!=4 && z<400){
+                continue;
+              }
               // volumes (8 bit) + boundaries (8 bit) layers (12 bit) + approach-surfaces (8 bit) + sensitive-surfaces (20 bit) + extra (8 bit)
               std::string binaryStringGeo = std::bitset<8>(1).to_string() + std::string(8, '0') + std::bitset<12>(surface).to_string() + std::string(8, '0') + std::bitset<20>(1).to_string() + std::string(8, '0');
               unsigned long long geometry_id = std::stoull(binaryStringGeo, nullptr, 2);

@@ -49,7 +49,7 @@ double Elab[NEnergy] = {20,30,40,80,158};
 double Tslope[2][NParticles][NEnergy] = {{{196.8,237.4,244.6,239.8,298.7},{0,0,229, 223.1, 229},{244,249,258,265,301},{0,0,218,0,267},{221,233,222,227,277}},//matter e rapidity distribution [matter/antimatter][particle][beam energy]
                                          {{196.8,237.4,244.6,239.8,298.7},{0,0,226,217,226},{339,284,301,292,303},{0,0,218,0,259},{311,277,255,321,0}}};//antimatter
 //sigma parameter of the gaussians of th                    phi                        K                       Lambda                Omega                    Xi
-double sigma_rapidity[2][NParticles][NEnergy] = {{{0.425,0.538,0.696,0.658,1.451},{0,0,0.725,0.792,0.88},{0.51,0.66,0.91,0.87,0},{0,0,0.6,0,1.2},{0.45,0.56,0.76,0.71,1.18}},//matter
+double sigma_rapidity[2][NParticles][NEnergy] = {{{0.425,0.538,0.696,0.658,1.451},{0,0,0.725,0.792,0.88},{0.51,0.66,0.91,0.87,1.00},{0,0,0.6,0,1.2},{0.45,0.56,0.76,0.71,1.18}},//matter
                                                  {{0.425,0.538,0.696,0.658,1.451},{0,0,0.635,0.705,0.81},{0.62,0.69,0.77,0.83,1.00},{0,0,0.6,0,1.0},{0,0.76,0.65,0.87,0.73}}};//antimatter
 //mu paramter of the gaussian of the rapidity distribution [matter/antimatter][particle][beam energy]
 //                                                       phi                        K                   Lambda                   Omega                    Xi

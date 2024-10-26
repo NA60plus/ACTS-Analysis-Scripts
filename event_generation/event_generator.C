@@ -83,7 +83,7 @@ void event_generator(int nev,
   fDecayer->Init(); // read the default decay table DECAY.DEC and particle table
   const char *privateDecayTable = "decaytables/USERTABD0.DEC";
 
-  TFile *filPow = new TFile("pp0_frag-PtSpectra-Boost.root");
+  TFile *filPow = new TFile("inputData/pp0_frag-PtSpectra-Boost.root");
   if (addD0)
   {
     h3Dpow = (TH3D *)filPow->Get("hptyeta421");
@@ -145,6 +145,10 @@ void event_generator(int nev,
     sigyBGKplus = 0.88;
     sigyBGKminus = 0.81;
     sigyBGP = 8.07;
+    yminBG = 1.5; // min y to generate
+    ymaxBG = 4.5; //
+    ptminBG = 0.01;
+    ptmaxBG = 5;
     dndyBGPi = 1258.;
     dndyBGK = 155.;
     dndyBGP = 292.;
@@ -184,8 +188,8 @@ void event_generator(int nev,
   }
   if (periferal != 1)
     options += "_periferal_factor_" + std::to_string(periferal);
-  std::string directoryName = "events_" + std::to_string(Eint) + "GeV" + options;
-  std::string directoryName_muons = "events_" + std::to_string(Eint) + "GeV" + options + "_muons";
+  std::string directoryName = "simulatedEvents/events_" + std::to_string(Eint) + "GeV" + options;
+  std::string directoryName_muons = "simulatedEvents/events_" + std::to_string(Eint) + "GeV" + options + "_muons";
 
   if (!fs::exists(directoryName))
   {                                                     // Check if directory doesn't exist
