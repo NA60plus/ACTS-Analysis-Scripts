@@ -12,7 +12,7 @@ event_generator(1000)
 
 You can download a set of events with prompt particles, $\text{K}^0_S \rightarrow \pi^+ + \pi^-$, and $\Lambda^0 \rightarrow \text{K}^- + \pi^+$ at 40 AGeV from https://cernbox.cern.ch/s/Ch80tIdItovM4R6.
 
-# Background for the muon spectrometer
+# Background from FLUKA
 The background hits are taken from FLUKA simulations. The FLUKA simulations are MB events and contains both the particles created from the collision of a Pb ion with one of the targets, their decays daughters, the delta rays and the particles produced in the absorbers.
 The hits are converted into csv files for ACTS. In the csv file for the VT only electrons and muons are saved.
 
