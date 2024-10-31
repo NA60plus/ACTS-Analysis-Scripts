@@ -48,55 +48,57 @@ void listFilesInDirectory(const std::string &path)
   }
 }
 
-float getZ(std::string val){
+float getZ(std::string val)
+{
   float z = 0;
-  if(val=="PixStn0")
+  if (val == "PixStn0")
     z = 71.1750031;
-  else if(val=="PixStn1")
+  else if (val == "PixStn1")
     z = 151.175003;
-  else if(val=="PixStn2")
+  else if (val == "PixStn2")
     z = 201.175003;
-  else if(val=="PixStn3")
+  else if (val == "PixStn3")
     z = 251.175003;
-  else if(val=="PixStn4")
+  else if (val == "PixStn4")
     z = 381.174988;
-  else if(val=="MS0")
+  else if (val == "MS0")
     z = 3000;
-  else if(val=="MS1")
+  else if (val == "MS1")
     z = 3600;
-  else if(val=="MS2")
+  else if (val == "MS2")
     z = 5300;
-  else if(val=="MS3")
+  else if (val == "MS3")
     z = 5900;
-  else if(val=="MS4")
+  else if (val == "MS4")
     z = 8100;
-  else if(val=="MS5")
+  else if (val == "MS5")
     z = 8500;
   return z;
 }
-int getSurface(std::string val){
+int getSurface(std::string val)
+{
   int surface = 0;
-  if(val=="PixStn0")
+  if (val == "PixStn0")
     surface = 2;
-  else if(val=="PixStn1")
+  else if (val == "PixStn1")
     surface = 4;
-  else if(val=="PixStn2")
+  else if (val == "PixStn2")
     surface = 6;
-  else if(val=="PixStn3")
+  else if (val == "PixStn3")
     surface = 8;
-  else if(val=="PixStn4")
+  else if (val == "PixStn4")
     surface = 10;
-  else if(val=="MS0")
+  else if (val == "MS0")
     surface = 12;
-  else if(val=="MS1")
+  else if (val == "MS1")
     surface = 14;
-  else if(val=="MS2")
+  else if (val == "MS2")
     surface = 16;
-  else if(val=="MS3")
+  else if (val == "MS3")
     surface = 18;
-  else if(val=="MS4")
+  else if (val == "MS4")
     surface = 20;
-  else if(val=="MS5")
+  else if (val == "MS5")
     surface = 22;
   return surface;
 }
@@ -172,7 +174,7 @@ std::map<int, int> flukaToPdg = {
     {46, -3334}, // Anti-Omega⁻
 };
 
-void bkg_generator(int nev = -1, int Eint = 40)
+void bkg_generator(int nev = -1, int Eint = 40, std::string flukaDirPrefix = "fluka_", std::string outputDirPrefix = "")
 {
   /*
 
@@ -196,26 +198,26 @@ void bkg_generator(int nev = -1, int Eint = 40)
         1         0        4        0                        1       0
 
   */
-  float zMS = 2000; // mm
+  float zVTLim = 400; // mm
   char csvname_vt[80];
   char csvname_ms[80];
   char csvname_vt_ms[80];
 
-  std::string directoryPath = "inputData/fluka_" + std::to_string(Eint)+ "GeV";
+  std::string directoryPath = "inputData/" + flukaDirPrefix + std::to_string(Eint) + "GeV";
 
-  std::string directoryName_vt = "simulatedEvents/bkghits_" + std::to_string(Eint) + "GeV_vt";
-  std::string directoryName_ms = "simulatedEvents/bkghits_" + std::to_string(Eint) + "GeV_ms";
-  std::string directoryName_vt_ms = "simulatedEvents/bkghits_" + std::to_string(Eint) + "GeV_vt_ms";
+  std::string directoryName_vt = "simulatedEvents/" + outputDirPrefix + "bkghits_" + std::to_string(Eint) + "GeV_vt";
+  std::string directoryName_ms = "simulatedEvents/" + outputDirPrefix + "bkghits_" + std::to_string(Eint) + "GeV_ms";
+  std::string directoryName_vt_ms = "simulatedEvents/" + outputDirPrefix + "bkghits_" + std::to_string(Eint) + "GeV_vt_ms";
 
   if (!fs::exists(directoryName_vt))
     bool created = fs::create_directory(directoryName_vt);
-    
+
   if (!fs::exists(directoryName_ms))
     bool created = fs::create_directory(directoryName_ms);
-    
+
   if (!fs::exists(directoryName_vt_ms))
     bool created = fs::create_directory(directoryName_vt_ms);
-    
+
   std::string qa_file_name = directoryName_vt_ms + "/QA_plots.root";
   TFile *check = new TFile(qa_file_name.c_str(), "recreate");
 
@@ -301,7 +303,7 @@ void bkg_generator(int nev = -1, int Eint = 40)
           // particle_id,geometry_id,tx,ty,tz,tt,tpx,tpy,tpz,te,deltapx,deltapy,deltapz,deltae,index
           // 5156621573355995136,72057731476881664,0.307201,-1.999749,3000.000000,0.000000,-182.768341,-211.306107,91.450699,293.969513,0.000000,0.000000,0.000000,0.000000,0
           // tx,ty,tz,tt = hit coordinates
-          // tpx,tpy,tpz,te = particle momentum and energy 
+          // tpx,tpy,tpz,te = particle momentum and energy
           // deltapx,deltapy,deltapz,deltae = variation of momentum and energy
           //
           // always a new particles id
@@ -315,7 +317,7 @@ void bkg_generator(int nev = -1, int Eint = 40)
 
           int nValues = lineValues.size();
           int offSet = 0;
-          if(nValues==9)
+          if (nValues == 9)
             offSet = -1;
           // Store the parsed values if not empty
           if (!lineValues.empty())
@@ -323,33 +325,35 @@ void bkg_generator(int nev = -1, int Eint = 40)
             std::string binaryStringPart = std::bitset<12>(bkg_counter++).to_string() + std::bitset<12>(0).to_string() + std::bitset<16>(1).to_string() + std::bitset<8>(0).to_string() + std::bitset<16>(0).to_string();
             unsigned long long particle_id = std::stoull(binaryStringPart, nullptr, 2);
 
-            //float value = std::stof(str);
-            float x = std::stof(lineValues[3+offSet]);
-            float y = std::stof(lineValues[4+offSet]);
-            //float z = std::stof(lineValues[5+offSet]);
-            float e = std::stof(lineValues[6+offSet]);
-            float cosx = std::stof(lineValues[7+offSet]);
-            float cosy = std::stof(lineValues[8+offSet]);
-            float cosz = std::stof(lineValues[9+offSet]);
+            // float value = std::stof(str);
+            float x = std::stof(lineValues[3 + offSet]);
+            float y = std::stof(lineValues[4 + offSet]);
+            // float z = std::stof(lineValues[5+offSet]);
+            float e = std::stof(lineValues[6 + offSet]);
+            float cosx = std::stof(lineValues[7 + offSet]);
+            float cosy = std::stof(lineValues[8 + offSet]);
+            float cosz = std::stof(lineValues[9 + offSet]);
             int flukacode = std::stof(lineValues[1]);
             float z = getZ(lineValues[0]);
-            
+
             double mass = TDatabasePDG::Instance()->GetParticle(flukaToPdg[flukacode])->Mass();
-            
-            float p = TMath::Sqrt(e*e-mass*mass);
-            float px = p*cosx;
-            float py = p*cosy;
-            float pz = p*cosz;
-            
+
+            float p = TMath::Sqrt(e * e - mass * mass);
+            float px = p * cosx;
+            float py = p * cosy;
+            float pz = p * cosz;
+
             int surface = getSurface(lineValues[0]);
-            if(surface==0){
+            if (surface == 0)
+            {
               continue;
             }
-            int surface_ms = getSurface(lineValues[0])-10;
+            int surface_ms = getSurface(lineValues[0]) - 10;
 
-            if (z < zMS)
+            if (z < zVTLim)
             {
-              if(flukacode!=3 && flukacode!=4 && z<400){
+              if (flukacode != 3 && flukacode != 4)
+              {
                 continue;
               }
               // volumes (8 bit) + boundaries (8 bit) layers (12 bit) + approach-surfaces (8 bit) + sensitive-surfaces (20 bit) + extra (8 bit)
@@ -362,6 +366,10 @@ void bkg_generator(int nev = -1, int Eint = 40)
               std::string binaryStringGeo = std::bitset<8>(1).to_string() + std::string(8, '0') + std::bitset<12>(surface_ms).to_string() + std::string(8, '0') + std::bitset<20>(1).to_string() + std::string(8, '0');
               unsigned long long geometry_id = std::stoull(binaryStringGeo, nullptr, 2);
               fprintf(fpcsv_ms, "%llu,%llu,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%i\n", particle_id, geometry_id, x, y, z, 0., px, py, pz, e, 0., 0., 0., 0., 0);
+            }
+            if (flukacode != 3 && flukacode != 4 && z < 400)
+            {
+              continue;
             }
             std::string binaryStringGeo = std::bitset<8>(1).to_string() + std::string(8, '0') + std::bitset<12>(surface).to_string() + std::string(8, '0') + std::bitset<20>(1).to_string() + std::string(8, '0');
             unsigned long long geometry_id = std::stoull(binaryStringGeo, nullptr, 2);
