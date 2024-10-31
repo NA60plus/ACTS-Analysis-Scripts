@@ -3,10 +3,14 @@
 results/*
 
 # Ignore the genereted events
-event_generation/events_*
+event_generation/simulatedEvents/events_*
+event_generation/inputData/events_*
 event_generator_C_ACLiC_dict_rdict.pcm 
 event_generator_C.d
 event_generator_C.so   
+bkg_generator_C_ACLiC_dict_rdict.pcm 
+bkg_generator_C.d
+bkg_generator_C.so   
 GenMUONLMR_cxx_ACLiC_dict_rdict.pcm 
 GenMUONLMR_cxx.d
 GenMUONLMR_cxx.so   
