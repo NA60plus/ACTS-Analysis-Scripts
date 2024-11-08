@@ -104,74 +104,64 @@ int getSurface(std::string val)
 }
 
 std::map<int, int> flukaToPdg = {
-    // Photon, Electron, Positron
-    {7, 22},  // Photon
-    {3, 11},  // Electron
-    {4, -11}, // Positron
-
-    // Neutrons, Protons, Deuterons, Alphas
-    {8, 2112},        // Neutron
-    {1, 2212},        // Proton
-    {45, 1000010020}, // Deuteron
-    {47, 1000020040}, // Alpha particle
-
-    // Charged Pions, Neutral Pions
-    {9, 211},   // Charged Pion (π⁺)
-    {10, -211}, // Charged Pion (π⁻)
-    {13, 111},  // Neutral Pion (π⁰)
-
-    // Muons
-    {5, 13},  // Muon (μ⁻)
-    {6, -13}, // Muon (μ⁺)
-
-    // Kaons
-    {11, 321},  // Kaon (K⁺)
-    {12, -321}, // Kaon (K⁻)
-    {16, 310},  // Kaon (K⁰_S)
-    {15, 130},  // Kaon (K⁰_L)
-
-    // Other hadrons
-    {14, 221},  // Eta (η)
-    {18, 3122}, // Lambda (Λ⁰)
-    {19, 3222}, // Sigma (Σ⁺)
-    {20, 3212}, // Sigma (Σ⁰)
-    {21, 3112}, // Sigma (Σ⁻)
-    {22, 3322}, // Xi (Ξ⁰)
-    {23, 3312}, // Xi (Ξ⁻)
-    {24, 3334}, // Omega (Ω⁻)
-
-    // Hyperons
-    {25, 4112}, // Sigma_c⁺
-    {26, 4114}, // Sigma_c*⁺
-    {27, 4212}, // Xi_c⁰
-
-    // Baryons and others
-    {48, 3124}, // Delta⁰
-    {49, 3224}, // Delta⁺
-
-    // Leptons
-    {31, 12},  // Neutrino (ν_e)
-    {32, -12}, // Anti-Neutrino (ν̅_e)
-    {33, 14},  // Muon Neutrino (ν_μ)
-    {34, -14}, // Anti-Muon Neutrino (ν̅_μ)
-
-    // Strange particles
-    {35, 130},  // Kaon_long (K⁰_L)
-    {36, 310},  // Kaon_short (K⁰_S)
-    {37, 311},  // Kaon_zero (K⁰)
-    {38, -311}, // Anti-Kaon_zero (K̅⁰)
-
-    // Heavy mesons
-    {50, 431},  // D_s+
-    {51, -431}, // D_s-
-
-    // Antiparticles
-    {2, -2212},  // Antiproton
-    {17, -3122}, // Anti-Lambda
-    {28, -3222}, // Anti-Sigma⁺
-    {29, -3112}, // Anti-Sigma⁻
-    {30, -3322}, // Anti-Xi⁰
-    {46, -3334}, // Anti-Omega⁻
+        {1, 2212},//Proton	
+        {2, -2212},//Antiproton
+        {3, 11},//Electron
+        {4, -11},//Positron
+        {5, 1},//Electron Neutrino	
+        {6, -1},//Electron Antineutrino	
+        {7, 22},//Photon	
+        {8, 2112},//Neutron	
+        {9, -2112},//Antineutron	
+        {10, -13},//Positive Muon	
+        {11, 13},//Negative Muon	
+        {12,130},//Kaon-zero long	
+        {13, 211},//Positive Pion	
+        {14, -211},//Negative Pion	
+        {15, 321},//Positive Kaon	
+        {16, -321},//Negative Kaon	
+        {17,3112},//Lambda	
+        {18,-3112},//Antilambda	
+        {19,310},//Kaon-zero short	
+        {20,3112},//Negative Sigma	
+        {21,3222},//Positive Sigma	
+        {22,3212},//Sigma-zero	
+        {23,111},//Pion-zero	
+        {24,311},//Kaon-zero	
+        {25,-311},//Antikaon-zero	
+        {27,14},//Muon Neutrino	
+        {28,-14},//Muon Antineutrino	
+        {31,-3222},//Antisigma-minus	
+        {32,-3212},//Antisigma-zero	
+        {33,-3112},//Antisigma-plus	
+        {34,3322},//Xi-zero	
+        {35,-3322},//Antixi-zero	
+        {36,3312},//Negative Xi	
+        {37,-3312},//Positive Xi	
+        {38,3334},//Omega-minus	
+        {39,-3334},//Antiomega	
+        {41,-15},//Positive Tau	
+        {42,15},//Negative Tau	
+        {43,16},//Tau Neutrino	
+        {44,-16},//Tau Antineutrino	
+        {45,411},//D-plus
+        {46,-411},//D-minus
+        {47,421},//D-zero	
+        {48,-421},//AntiD-zero
+        {49,431},//D_s-plus	
+        {50,431},//D_s-minus	
+        {51,4122},//Lambda_c-plus
+        {52,4232},//Xi_c-plus
+        {53,4132},//Xi_c-zero
+        {54,4322},//Xi'_c-plus
+        {55,4312},//Xi'_c-zero
+        {56,4332},//Omega_c-zero
+        {57,-4122},//Antilambda_c-minus
+        {58,-4232},//AntiXi_c-minus
+        {59,-4132},//AntiXi_c-zero
+        {60,-4322},//AntiXi'_c-minus
+        {61,-4312},//AntiXi'_c-zero
+        {62,-4332}//AntiOmega_c-zero
 };
 
 void bkg_generator(int nev = -1, int Eint = 40, std::string flukaDirPrefix = "fluka_", std::string outputDirPrefix = "")
