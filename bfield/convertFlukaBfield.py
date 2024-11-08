@@ -1,6 +1,14 @@
 import re
 import ROOT
 
+ROOT.gStyle.SetTitleSize(0.05, "XYZ") # Sets the size for X, Y, and Z axis titles
+ROOT.gStyle.SetTitleFontSize(0.05) # Sets the size for the histogram title
+ROOT.gStyle.SetLabelSize(0.04, "XYZ")
+ROOT.gStyle.SetPadLeftMargin(0.15)   #Set left margin
+ROOT.gStyle.SetPadRightMargin(0.05)  #Set right margin
+ROOT.gStyle.SetPadTopMargin(0.05)    #Set top margin
+ROOT.gStyle.SetPadBottomMargin(0.15) #Set bottom margin
+ROOT.gStyle.SetHistLineWidth(2)
 
 def get_b_values(path="data/MEP48_field_map.inp"):
     # Read the file
@@ -237,36 +245,91 @@ def convert_map(magnet="MEP48", zshift=0):
     matrix = from_line_to_matrix(matrix, len(matrix) / bins[2])
     range_z[0] = range_z[0] + zshift
     range_z[1] = range_z[1] + zshift
+
+
     matrix, range_x, range_y, range_z, bins = extend_formatted_field(matrix, -300, 300, -300, 300, -155, 1005, range_x, range_y, range_z, binsize, bins)
 
+        
+    hFieldxMax = ROOT.TH1D("hFieldxMax", ";#it{z} (cm);|#it{B}_{x}|^{max} (T)", bins[2], range_z[0], range_z[1])
+    hFieldyMax = ROOT.TH1D("hFieldyMax", ";#it{z} (cm);|#it{B}_{y}|^{max} (T)", bins[2], range_z[0], range_z[1])
+    hFieldzMax = ROOT.TH1D("hFieldzMax", ";#it{z} (cm);|#it{B}_{z}|^{max} (T)", bins[2], range_z[0], range_z[1])
+    if magnet == "MEP48":
+
+            
+        hFieldxMax = ROOT.TH1D("hFieldxMax", ";#it{z} (cm);|#it{B}_{x}|^{max} (T)", 10, 0, 50)
+        hFieldyMax = ROOT.TH1D("hFieldyMax", ";#it{z} (cm);|#it{B}_{y}|^{max} (T)", 10, 0, 50)
+        hFieldzMax = ROOT.TH1D("hFieldzMax", ";#it{z} (cm);|#it{B}_{z}|^{max} (T)", 10, 0, 50)
+
+    stepx = (range_x[1] - range_x[0] + binsize) / bins[0]
+    stepy = (range_y[1] - range_y[0] + binsize) / bins[1]
+    stepz = (range_z[1] - range_z[0] + binsize) / bins[2]
+
+
+    for iz in range(0, bins[2]):
+
+        zval = range_z[0] + iz * stepz
+        bxvalMax = -1
+        byvalMax = -1
+        bzvalMax = -1
+
+        for ix in range(0, bins[0]):
+            xval = range_x[0] + ix * stepx
+            if (xval>15 or xval<-15) and magnet == "MEP48":
+                continue
+            elif xval>100 or xval<-100:
+                continue
+
+            for iy in range(0, bins[1]):
+                yval = range_y[0] + iy * stepy
+                if (yval>15 or yval<-15) and magnet == "MEP48":
+                    continue
+                elif yval>100 or yval<-100:
+                    continue
+                if ROOT.TMath.Abs(matrix[iz][ix+iy*bins[0]][0]) > bxvalMax:
+                    bxvalMax = ROOT.TMath.Abs(matrix[iz][ix+iy*bins[0]][0])
+                if ROOT.TMath.Abs(matrix[iz][ix+iy*bins[0]][1]) > byvalMax:
+                    byvalMax = ROOT.TMath.Abs(matrix[iz][ix+iy*bins[0]][1])
+                if ROOT.TMath.Abs(matrix[iz][ix+iy*bins[0]][2]) > bzvalMax:
+                    bzvalMax = ROOT.TMath.Abs(matrix[iz][ix+iy*bins[0]][2])
+        hFieldxMax.Fill(zval, bxvalMax)
+        hFieldyMax.Fill(zval, byvalMax)
+        hFieldzMax.Fill(zval, bzvalMax)
+
+    maxRangeX = hFieldxMax.GetMaximum()
+    maxRangeY = hFieldyMax.GetMaximum()
+    maxRangeZ = hFieldzMax.GetMaximum()
     
     if magnet == "MEP48":
+
+        hFieldxMax.GetYaxis().SetRangeUser(0, 0.15)
+        hFieldyMax.GetYaxis().SetRangeUser(0, 1.55)
+        hFieldzMax.GetYaxis().SetRangeUser(0, 0.45)
 
         matrix = rebin_matrix(matrix,bins)
         bins[0] = int((bins[0]-1)/2+1)
         bins[1] = int((bins[1]-1)/2+1)
         bins[2] = int((bins[2]-1)/2+1)
         binsize =  2*binsize
-        
-    hFieldx = ROOT.TH1D("hFieldx", ";z [cm];Bx [T]", bins[2], range_z[0], range_z[1])
-    hFieldy = ROOT.TH1D("hFieldy", ";z [cm];By [T]", bins[2], range_z[0], range_z[1])
-    hFieldz = ROOT.TH1D("hFieldz", ";z [cm];Bz [T]", bins[2], range_z[0], range_z[1])
 
-    hFieldxmin = ROOT.TH1D("hFieldxmin", ";z [cm];Bx [T]", bins[2], range_z[0], range_z[1])
-    hFieldymin = ROOT.TH1D("hFieldymin", ";z [cm];By [T]", bins[2], range_z[0], range_z[1])
-    hFieldzmin = ROOT.TH1D("hFieldzmin", ";z [cm];Bz [T]", bins[2], range_z[0], range_z[1])
+    hFieldx = ROOT.TH1D("hFieldx", ";#it{z} (cm);Bx (T)", bins[2], range_z[0], range_z[1])
+    hFieldy = ROOT.TH1D("hFieldy", ";#it{z} (cm);By (T)", bins[2], range_z[0], range_z[1])
+    hFieldz = ROOT.TH1D("hFieldz", ";#it{z} (cm);Bz (T)", bins[2], range_z[0], range_z[1])
 
-    hFieldxplus = ROOT.TH1D("hFieldxplus", ";z [cm];Bx [T]", bins[2], range_z[0], range_z[1])
-    hFieldyplus = ROOT.TH1D("hFieldyplus", ";z [cm];By [T]", bins[2], range_z[0], range_z[1])
-    hFieldzplus = ROOT.TH1D("hFieldzplus", ";z [cm];Bz [T]", bins[2], range_z[0], range_z[1])
+    hFieldxmin = ROOT.TH1D("hFieldxmin", ";#it{z} (cm);Bx (T)", bins[2], range_z[0], range_z[1])
+    hFieldymin = ROOT.TH1D("hFieldymin", ";#it{z} (cm);By (T)", bins[2], range_z[0], range_z[1])
+    hFieldzmin = ROOT.TH1D("hFieldzmin", ";#it{z} (cm);Bz (T)", bins[2], range_z[0], range_z[1])
 
-    hFieldxminplus = ROOT.TH1D("hFieldxminplus", ";z [cm];Bx [T]", bins[2], range_z[0], range_z[1])
-    hFieldyminplus = ROOT.TH1D("hFieldyminplus", ";z [cm];By [T]", bins[2], range_z[0], range_z[1])
-    hFieldzminplus = ROOT.TH1D("hFieldzminplus", ";z [cm];Bz [T]", bins[2], range_z[0], range_z[1])
+    hFieldxplus = ROOT.TH1D("hFieldxplus", ";#it{z} (cm);Bx (T)", bins[2], range_z[0], range_z[1])
+    hFieldyplus = ROOT.TH1D("hFieldyplus", ";#it{z} (cm);By (T)", bins[2], range_z[0], range_z[1])
+    hFieldzplus = ROOT.TH1D("hFieldzplus", ";#it{z} (cm);Bz (T)", bins[2], range_z[0], range_z[1])
 
-    hFieldxplusmin = ROOT.TH1D("hFieldxplusmin", ";z [cm];Bx [T]", bins[2], range_z[0], range_z[1])
-    hFieldyplusmin = ROOT.TH1D("hFieldyplusmin", ";z [cm];By [T]", bins[2], range_z[0], range_z[1])
-    hFieldzplusmin = ROOT.TH1D("hFieldzplusmin", ";z [cm];Bz [T]", bins[2], range_z[0], range_z[1])
+    hFieldxminplus = ROOT.TH1D("hFieldxminplus", ";#it{z} (cm);Bx (T)", bins[2], range_z[0], range_z[1])
+    hFieldyminplus = ROOT.TH1D("hFieldyminplus", ";#it{z} (cm);By (T)", bins[2], range_z[0], range_z[1])
+    hFieldzminplus = ROOT.TH1D("hFieldzminplus", ";#it{z} (cm);Bz (T)", bins[2], range_z[0], range_z[1])
+
+    hFieldxplusmin = ROOT.TH1D("hFieldxplusmin", ";#it{z} (cm);Bx (T)", bins[2], range_z[0], range_z[1])
+    hFieldyplusmin = ROOT.TH1D("hFieldyplusmin", ";#it{z} (cm);By (T)", bins[2], range_z[0], range_z[1])
+    hFieldzplusmin = ROOT.TH1D("hFieldzplusmin", ";#it{z} (cm);Bz (T)", bins[2], range_z[0], range_z[1])
 
     hFieldx.SetLineColor(ROOT.kBlack)
     hFieldy.SetLineColor(ROOT.kBlack)
@@ -293,6 +356,7 @@ def convert_map(magnet="MEP48", zshift=0):
 
     file = open(magnet + ".txt", "w")
     plotrange = 10 if magnet == "MEP48" else 70
+        
     for ix in range(0, bins[0]):
         xval = range_x[0] + ix * stepx
         #if xval % 10 == 5:
@@ -361,6 +425,168 @@ def convert_map(magnet="MEP48", zshift=0):
         pad.SetMargin(
             0.2, 0.1, 0.1, 0.1
         )  # Set left, right, bottom, top margins (in fraction of pad)
+    
+#    if magnet == "MEP48":
+
+    cv.cd(1)
+    hFieldxMax.Draw("hist") 
+
+    vt1_x = ROOT.TLine(7.1175, 0, 7.1175, maxRangeX)
+    vt2_x = ROOT.TLine(15.1175, 0, 15.1175, maxRangeX)
+    vt3_x = ROOT.TLine(20.1175, 0, 20.1175, maxRangeX)
+    vt4_x = ROOT.TLine(25.1175, 0, 25.1175, maxRangeX)
+    vt5_x = ROOT.TLine(38.1175, 0, 38.1175, maxRangeX)
+
+    ms1_x = ROOT.TLine(299.9695, 0, 299.9695, maxRangeX)
+    ms2_x = ROOT.TLine(359.9695, 0, 359.9695, maxRangeX)
+    ms3_x = ROOT.TLine(529.9695, 0, 529.9695, maxRangeX)
+    ms4_x = ROOT.TLine(589.9695, 0, 589.9695, maxRangeX)
+    ms5_x = ROOT.TLine(809.9695, 0, 809.9695, maxRangeX)
+    ms6_x = ROOT.TLine(849.9695, 0, 849.9695, maxRangeX)
+
+    vt1_x.SetLineColor(ROOT.kRed)
+    vt2_x.SetLineColor(ROOT.kRed)
+    vt3_x.SetLineColor(ROOT.kRed)
+    vt4_x.SetLineColor(ROOT.kRed)
+    vt5_x.SetLineColor(ROOT.kRed)
+    ms1_x.SetLineColor(ROOT.kRed)
+    ms2_x.SetLineColor(ROOT.kRed)
+    ms3_x.SetLineColor(ROOT.kRed)
+    ms4_x.SetLineColor(ROOT.kRed)
+    ms5_x.SetLineColor(ROOT.kRed)
+    ms6_x.SetLineColor(ROOT.kRed)
+
+    vt1_x.SetLineWidth(2)
+    vt2_x.SetLineWidth(2)
+    vt3_x.SetLineWidth(2)
+    vt4_x.SetLineWidth(2)
+    vt5_x.SetLineWidth(2)
+    ms1_x.SetLineWidth(2)
+    ms2_x.SetLineWidth(2)
+    ms3_x.SetLineWidth(2)
+    ms4_x.SetLineWidth(2)
+    ms5_x.SetLineWidth(2)
+    ms6_x.SetLineWidth(2)
+
+    if magnet == "MEP48":
+        vt1_x.Draw("same")
+        vt2_x.Draw("same")
+        vt3_x.Draw("same")
+        vt4_x.Draw("same")
+        vt5_x.Draw("same")
+    else:
+        ms1_x.Draw("same")
+        ms2_x.Draw("same")
+        ms3_x.Draw("same")
+        ms4_x.Draw("same")
+        ms5_x.Draw("same")
+        ms6_x.Draw("same")
+
+    cv.cd(2)
+    hFieldyMax.Draw("hist") 
+    vt1_y = ROOT.TLine(7.1175, 0, 7.1175, maxRangeY)
+    vt2_y = ROOT.TLine(15.1175, 0, 15.1175, maxRangeY)
+    vt3_y = ROOT.TLine(20.1175, 0, 20.1175, maxRangeY)
+    vt4_y = ROOT.TLine(25.1175, 0, 25.1175, maxRangeY)
+    vt5_y = ROOT.TLine(38.1175, 0, 38.1175, maxRangeY)
+
+    ms1_y = ROOT.TLine(299.9695, 0, 299.9695, maxRangeY)
+    ms2_y = ROOT.TLine(359.9695, 0, 359.9695, maxRangeY)
+    ms3_y = ROOT.TLine(529.9695, 0, 529.9695, maxRangeY)
+    ms4_y = ROOT.TLine(589.9695, 0, 589.9695, maxRangeY)
+    ms5_y = ROOT.TLine(809.9695, 0, 809.9695, maxRangeY)
+    ms6_y = ROOT.TLine(849.9695, 0, 849.9695, maxRangeY)
+
+    vt1_y.SetLineColor(ROOT.kRed)
+    vt2_y.SetLineColor(ROOT.kRed)
+    vt3_y.SetLineColor(ROOT.kRed)
+    vt4_y.SetLineColor(ROOT.kRed)
+    vt5_y.SetLineColor(ROOT.kRed)
+    ms1_y.SetLineColor(ROOT.kRed)
+    ms2_y.SetLineColor(ROOT.kRed)
+    ms3_y.SetLineColor(ROOT.kRed)
+    ms4_y.SetLineColor(ROOT.kRed)
+    ms5_y.SetLineColor(ROOT.kRed)
+    ms6_y.SetLineColor(ROOT.kRed)
+
+    vt1_y.SetLineWidth(2)
+    vt2_y.SetLineWidth(2)
+    vt3_y.SetLineWidth(2)
+    vt4_y.SetLineWidth(2)
+    vt5_y.SetLineWidth(2)
+    ms1_y.SetLineWidth(2)
+    ms2_y.SetLineWidth(2)
+    ms3_y.SetLineWidth(2)
+    ms4_y.SetLineWidth(2)
+    ms5_y.SetLineWidth(2)
+    ms6_y.SetLineWidth(2)
+    if magnet == "MEP48":
+        vt1_y.Draw("same")
+        vt2_y.Draw("same")
+        vt3_y.Draw("same")
+        vt4_y.Draw("same")
+        vt5_y.Draw("same")
+    else:
+        ms1_y.Draw("same")
+        ms2_y.Draw("same")
+        ms3_y.Draw("same")
+        ms4_y.Draw("same")
+        ms5_y.Draw("same")
+        ms6_y.Draw("same")
+
+    cv.cd(3)
+    hFieldzMax.Draw("hist") 
+
+    vt1 = ROOT.TLine(7.1175, 0, 7.1175, maxRangeZ)
+    vt2 = ROOT.TLine(15.1175, 0, 15.1175, maxRangeZ)
+    vt3 = ROOT.TLine(20.1175, 0, 20.1175, maxRangeZ)
+    vt4 = ROOT.TLine(25.1175, 0, 25.1175, maxRangeZ)
+    vt5 = ROOT.TLine(38.1175, 0, 38.1175, maxRangeZ)
+
+    ms1 = ROOT.TLine(299.9695, 0, 299.9695, maxRangeZ)
+    ms2 = ROOT.TLine(359.9695, 0, 359.9695, maxRangeZ)
+    ms3 = ROOT.TLine(529.9695, 0, 529.9695, maxRangeZ)
+    ms4 = ROOT.TLine(589.9695, 0, 589.9695, maxRangeZ)
+    ms5 = ROOT.TLine(809.9695, 0, 809.9695, maxRangeZ)
+    ms6 = ROOT.TLine(849.9695, 0, 849.9695, maxRangeZ)
+
+    vt1.SetLineColor(ROOT.kRed)
+    vt2.SetLineColor(ROOT.kRed)
+    vt3.SetLineColor(ROOT.kRed)
+    vt4.SetLineColor(ROOT.kRed)
+    vt5.SetLineColor(ROOT.kRed)
+    ms1.SetLineColor(ROOT.kRed)
+    ms2.SetLineColor(ROOT.kRed)
+    ms3.SetLineColor(ROOT.kRed)
+    ms4.SetLineColor(ROOT.kRed)
+    ms5.SetLineColor(ROOT.kRed)
+    ms6.SetLineColor(ROOT.kRed)
+
+    vt1.SetLineWidth(2)
+    vt2.SetLineWidth(2)
+    vt3.SetLineWidth(2)
+    vt4.SetLineWidth(2)
+    vt5.SetLineWidth(2)
+    ms1.SetLineWidth(2)
+    ms2.SetLineWidth(2)
+    ms3.SetLineWidth(2)
+    ms4.SetLineWidth(2)
+    ms5.SetLineWidth(2)
+    ms6.SetLineWidth(2)
+    if magnet == "MEP48":
+        vt1.Draw("same")
+        vt2.Draw("same")
+        vt3.Draw("same")
+        vt4.Draw("same")
+        vt5.Draw("same")
+    else:
+        ms1.Draw("same")
+        ms2.Draw("same")
+        ms3.Draw("same")
+        ms4.Draw("same")
+        ms5.Draw("same")
+        ms6.Draw("same")
+    cv.SaveAs("figures/" + magnet + "_max_fieldvsz.png")
 
     cv.cd(1)
     hFieldx.Draw("hist") 
@@ -430,25 +656,30 @@ def merge_map(maps,binsize,range_x,range_y,range_z,bins):
             matrix[i][j][0] = mep48[i][j][0] + mnp33[i][j][0]
             matrix[i][j][1] = mep48[i][j][1] + mnp33[i][j][1]
             matrix[i][j][2] = mep48[i][j][2] + mnp33[i][j][2]
-    hFieldx = ROOT.TH1D("hFieldx", ";z [cm];Bx [T]", bins[2], range_z[0], range_z[1])
-    hFieldy = ROOT.TH1D("hFieldy", ";z [cm];By [T]", bins[2], range_z[0], range_z[1])
-    hFieldz = ROOT.TH1D("hFieldz", ";z [cm];Bz [T]", bins[2], range_z[0], range_z[1])
 
-    hFieldxmin = ROOT.TH1D("hFieldxmin", ";z [cm];Bx [T]", bins[2], range_z[0], range_z[1])
-    hFieldymin = ROOT.TH1D("hFieldymin", ";z [cm];By [T]", bins[2], range_z[0], range_z[1])
-    hFieldzmin = ROOT.TH1D("hFieldzmin", ";z [cm];Bz [T]", bins[2], range_z[0], range_z[1])
+    hFieldxMax = ROOT.TH1D("hFieldxMax", ";#it{z} (cm);|#it{B}_{x}|^{max} (T)", bins[2], range_z[0], range_z[1])
+    hFieldyMax = ROOT.TH1D("hFieldyMax", ";#it{z} (cm);|#it{B}_{y}|^{max} (T)", bins[2], range_z[0], range_z[1])
+    hFieldzMax = ROOT.TH1D("hFieldzMax", ";#it{z} (cm);|#it{B}_{z}|^{max} (T)", bins[2], range_z[0], range_z[1])
 
-    hFieldxplus = ROOT.TH1D("hFieldxplus", ";z [cm];Bx [T]", bins[2], range_z[0], range_z[1])
-    hFieldyplus = ROOT.TH1D("hFieldyplus", ";z [cm];By [T]", bins[2], range_z[0], range_z[1])
-    hFieldzplus = ROOT.TH1D("hFieldzplus", ";z [cm];Bz [T]", bins[2], range_z[0], range_z[1])
+    hFieldx = ROOT.TH1D("hFieldx", ";#it{z} (cm);Bx (T)", bins[2], range_z[0], range_z[1])
+    hFieldy = ROOT.TH1D("hFieldy", ";#it{z} (cm);By (T)", bins[2], range_z[0], range_z[1])
+    hFieldz = ROOT.TH1D("hFieldz", ";#it{z} (cm);Bz (T)", bins[2], range_z[0], range_z[1])
 
-    hFieldxminplus = ROOT.TH1D("hFieldxminplus", ";z [cm];Bx [T]", bins[2], range_z[0], range_z[1])
-    hFieldyminplus = ROOT.TH1D("hFieldyminplus", ";z [cm];By [T]", bins[2], range_z[0], range_z[1])
-    hFieldzminplus = ROOT.TH1D("hFieldzminplus", ";z [cm];Bz [T]", bins[2], range_z[0], range_z[1])
+    hFieldxmin = ROOT.TH1D("hFieldxmin", ";#it{z} (cm);Bx (T)", bins[2], range_z[0], range_z[1])
+    hFieldymin = ROOT.TH1D("hFieldymin", ";#it{z} (cm);By (T)", bins[2], range_z[0], range_z[1])
+    hFieldzmin = ROOT.TH1D("hFieldzmin", ";#it{z} (cm);Bz (T)", bins[2], range_z[0], range_z[1])
 
-    hFieldxplusmin = ROOT.TH1D("hFieldxplusmin", ";z [cm];Bx [T]", bins[2], range_z[0], range_z[1])
-    hFieldyplusmin = ROOT.TH1D("hFieldyplusmin", ";z [cm];By [T]", bins[2], range_z[0], range_z[1])
-    hFieldzplusmin = ROOT.TH1D("hFieldzplusmin", ";z [cm];Bz [T]", bins[2], range_z[0], range_z[1])
+    hFieldxplus = ROOT.TH1D("hFieldxplus", ";#it{z} (cm);Bx (T)", bins[2], range_z[0], range_z[1])
+    hFieldyplus = ROOT.TH1D("hFieldyplus", ";#it{z} (cm);By (T)", bins[2], range_z[0], range_z[1])
+    hFieldzplus = ROOT.TH1D("hFieldzplus", ";#it{z} (cm);Bz (T)", bins[2], range_z[0], range_z[1])
+
+    hFieldxminplus = ROOT.TH1D("hFieldxminplus", ";#it{z} (cm);Bx (T)", bins[2], range_z[0], range_z[1])
+    hFieldyminplus = ROOT.TH1D("hFieldyminplus", ";#it{z} (cm);By (T)", bins[2], range_z[0], range_z[1])
+    hFieldzminplus = ROOT.TH1D("hFieldzminplus", ";#it{z} (cm);Bz (T)", bins[2], range_z[0], range_z[1])
+
+    hFieldxplusmin = ROOT.TH1D("hFieldxplusmin", ";#it{z} (cm);Bx (T)", bins[2], range_z[0], range_z[1])
+    hFieldyplusmin = ROOT.TH1D("hFieldyplusmin", ";#it{z} (cm);By (T)", bins[2], range_z[0], range_z[1])
+    hFieldzplusmin = ROOT.TH1D("hFieldzplusmin", ";#it{z} (cm);Bz (T)", bins[2], range_z[0], range_z[1])
 
     hFieldx.SetLineColor(ROOT.kBlack)
     hFieldy.SetLineColor(ROOT.kBlack)
@@ -475,6 +706,24 @@ def merge_map(maps,binsize,range_x,range_y,range_z,bins):
 
     file = open("NewBFieldNA60plus_longsetup.txt", "w")
     plotrange = 10
+
+
+    for iz in range(0, bins[2]):
+        zval = range_z[0] + iz * stepz
+        bxvalMax = ROOT.TMath.Abs(matrix[iz][0][0])
+        byvalMax = ROOT.TMath.Abs(matrix[iz][0][1])
+        bzvalMax = ROOT.TMath.Abs(matrix[iz][0][2])
+        for m in matrix[iz]:
+            if ROOT.TMath.Abs(m[0]) > bxvalMax:
+                bxvalMax = ROOT.TMath.Abs(m[0])
+            if ROOT.TMath.Abs(m[1]) > byvalMax:
+                byvalMax = ROOT.TMath.Abs(m[1])
+            if ROOT.TMath.Abs(m[2]) > bzvalMax:
+                bzvalMax = ROOT.TMath.Abs(m[2])
+        hFieldxMax.Fill(zval, bxvalMax)
+        hFieldyMax.Fill(zval, byvalMax)
+        hFieldzMax.Fill(zval, bzvalMax)
+
     for ix in range(0, bins[0]):
         xval = range_x[0] + ix * stepx
         #if xval % 10 == 5:
@@ -491,7 +740,9 @@ def merge_map(maps,binsize,range_x,range_y,range_z,bins):
                 bxval = matrix[iz][ix + iy * bins[0]][0]
                 byval = matrix[iz][ix + iy * bins[0]][1]
                 bzval = matrix[iz][ix + iy * bins[0]][2]
+
                 file.write(f"{xval*10} {yval*10} {zval*10} {bxval} {byval} {bzval}\n")
+
 
                 if yval == 0 and xval == 0:
                     hFieldx.Fill(zval, bxval)
@@ -539,6 +790,15 @@ def merge_map(maps,binsize,range_x,range_y,range_z,bins):
         pad.SetMargin(
             0.2, 0.1, 0.1, 0.1
         )  # Set left, right, bottom, top margins (in fraction of pad)
+
+    cv.cd(1)
+    hFieldxMax.Draw("hist") 
+    cv.cd(2)
+    hFieldyMax.Draw("hist") 
+    cv.cd(3)
+    hFieldzMax.Draw("hist") 
+
+    cv.SaveAs("figures/max_fieldvsz.png")
 
     cv.cd(1)
     hFieldx.Draw("hist") 
