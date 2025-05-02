@@ -47,7 +47,6 @@ double muon_TSG;           // inv.slope of thermal pt distribution
 double muon_ptminSG = 0.01;
 double muon_ptmaxSG = 3;
 
-
 // settings for signal generation
 double MotherMass;
 int generYPtPar, ProcType;
@@ -57,7 +56,7 @@ void InitBgGenerationPart(double, double, double, double, double,
                           double, double, double, double,
                           double, double,
                           double, double, double, double, double);
-void GenBgEvent(double, double, double, int, bool, bool, bool, const Char_t*, AliDecayerEvtGen *, FILE *, FILE *, int, float, TH1D *, TH1D *, TH1D *, TH1D *, TH1D *, TH1D *);
+void GenBgEvent(double, double, double, int, bool, bool, bool, const Char_t *, AliDecayerEvtGen *, FILE *, FILE *, int, float, TH1D *, TH1D *, TH1D *, TH1D *, TH1D *, TH1D *, TH1D *,GenMUONLMR *);
 
 void SetProcessParameters(const Char_t *Process, Double_t E);
 
@@ -136,7 +135,7 @@ void event_generator(int nev,
   {
     // pions and Kaons from  NA49 nucl-ex/0205002
     printf("--- Background parameters for E=158 GeV/nucleon ---\n");
-    y0BG = 2.9; // gaussian y mean - 160 GeV
+    y0BG = 0;//2.9; // gaussian y mean - 160 GeV
     y0BGPi = 0.72;
     y0BGKplus = 0.839;
     y0BGKminus = 0.727;
@@ -180,7 +179,7 @@ void event_generator(int nev,
     options += "_onlyTarget_" + std::to_string(onlyT);
     options += "_beamSigma_" + std::to_string(beamSigma);
   }
-  
+
   if (strcmp(Process, "none") != 0)
   {
     options += "_";
@@ -209,7 +208,7 @@ void event_generator(int nev,
     std::cout << "Directory already exists: " << directoryName << std::endl;
   }
   if (!fs::exists(directoryName_muons))
-  {                                                     // Check if directory doesn't exist
+  {                                                           // Check if directory doesn't exist
     bool created = fs::create_directory(directoryName_muons); // Create the directory
     if (created)
     {
@@ -251,10 +250,13 @@ void event_generator(int nev,
   TH1D *hNGenP = new TH1D("hNGenP", ";x (mm);Entries", 1000, -0.5, 999.5);
   TH1D *hNGenK0S = new TH1D("hNGenK0S", ";x (mm);Entries", 1000, -0.5, 999.5);
   TH1D *hNGenLambda = new TH1D("hNGenLambda", ";x (mm);Entries", 1000, -0.5, 999.5);
+  TH1D *hNGenD0 = new TH1D("hNGenD0", ";d (um);Entries", 1000, 0, 5000);
   TH1D *hNGenParts = new TH1D("hNGenParts", ";x (mm);Entries", 2000, -0.5, 1999.5);
 
   FILE *fpcsv;
   FILE *fpcsv_muons;
+  GenMUONLMR *gener = new GenMUONLMR(7, 1);
+
   for (int i = 0; i < nev; i++)
   {
     int nzeros = 9;
@@ -297,7 +299,7 @@ void event_generator(int nev,
     }
     else if (onlyT != -1)
     {
-      vZ = -(gRandom->Rndm() * targetThickness + (onlyT) * (distBetweenTargets + targetThickness));
+      vZ = 0; //-(gRandom->Rndm() * targetThickness * 0 + (onlyT) * (distBetweenTargets + targetThickness));
     }
     hGenZ->Fill(vZ);
     hGenX->Fill(vX);
@@ -309,7 +311,9 @@ void event_generator(int nev,
                hNGenP,
                hNGenK0S,
                hNGenLambda,
-               hNGenParts);
+               hNGenParts,
+               hNGenD0,
+               gener);
     fclose(fpcsv);
     fclose(fpcsv_muons);
   }
@@ -325,6 +329,7 @@ void event_generator(int nev,
   hNGenP->Write();
   hNGenK0S->Write();
   hNGenLambda->Write();
+  hNGenD0->Write();
   hNGenParts->Write();
   check->Close();
   fDecayer->Delete();
@@ -369,7 +374,7 @@ void InitBgGenerationPart(double NPi, double NKplus, double NKminus, double NP, 
   fdNdPtP->SetParameter(0, TP);
 }
 
-void GenBgEvent(double x, double y, double z, int event, bool addBkg, bool addD0, bool addSec, const Char_t *Process, AliDecayerEvtGen *fDecayer, FILE *fpcsv, FILE *fpcsv_muons, int Eint, float periferal, TH1D *h1, TH1D *h2, TH1D *h3, TH1D *h4, TH1D *h5, TH1D *h6)
+void GenBgEvent(double x, double y, double z, int event, bool addBkg, bool addD0, bool addSec, const Char_t *Process, AliDecayerEvtGen *fDecayer, FILE *fpcsv, FILE *fpcsv_muons, int Eint, float periferal, TH1D *h1, TH1D *h2, TH1D *h3, TH1D *h4, TH1D *h5, TH1D *h6, TH1D *h7, GenMUONLMR *gener)
 {
   if (fNChPi < 0 && fNChK < 0 && fNChP < 0)
     return;
@@ -460,15 +465,68 @@ void GenBgEvent(double x, double y, double z, int event, bool addBkg, bool addD0
       unsigned long long barcode = std::stoull(binaryString, nullptr, 2);
       fprintf(fpcsv, "%llu,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", barcode, ptypecsv, 0, x, y, z, 0., pxyz[0], pxyz[1], pxyz[2], masscsv, charge);
     }
-  }    
+  }
   int nMomGen = 0;
 
-  if (addD0 || addSec)
+  std::vector<int> vPdg = {310, 3122};
+
+  if (addD0)
   {
-    std::vector<int> vPdg = {310, 3122};
+    int pdg = 421;
+    double mass = TDatabasePDG::Instance()->GetParticle(pdg)->Mass();
 
-    //std::vector<int> vPdg = {310};
+    for (int nMom = 1; nMom <= 1; nMom++)
+    {
+      nMomGen++;
+      double ptGenD = hD0pt->GetRandom();
+      double yGenD = hD0y->GetRandom();
+      double phi = gRandom->Rndm() * 2 * TMath::Pi();
+      double pxGenD = ptGenD * TMath::Cos(phi);
+      double pyGenD = ptGenD * TMath::Sin(phi);
 
+      double mt = TMath::Sqrt(ptGenD * ptGenD + mass * mass);
+      double pzGenD = mt * TMath::SinH(yGenD);
+      double en = mt * TMath::CosH(yGenD);
+
+      std::string binaryString = std::bitset<12>(event + 1).to_string() + std::string(12, '0') + std::bitset<16>(particleNumber++).to_string() + std::string(24, '0');
+      unsigned long long barcode = std::stoull(binaryString, nullptr, 2);
+      TLorentzVector *mom = new TLorentzVector();
+      mom->SetPxPyPzE(pxGenD, pyGenD, pzGenD, en);
+      fprintf(fpcsv, "%llu,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", barcode, pdg, nMom, x, y, z, 0., pxGenD, pyGenD, pzGenD, mass, 0.0);
+      TClonesArray *particles = new TClonesArray("TParticle", 10);
+      Int_t np;
+      do
+      {
+        fDecayer->Decay(pdg, mom);
+        np = fDecayer->ImportParticles(particles);
+      } while (np < 0);
+
+      // loop on decay products
+      for (int i = 1; i < np; i++)
+      {
+        if (i == 3)
+          break;
+        TParticle *iparticle1 = (TParticle *)particles->At(i);
+        double charge = iparticle1->GetPdgCode() / TMath::Abs(iparticle1->GetPdgCode());
+        double vX = iparticle1->Vx();
+        double vY = iparticle1->Vy();
+        double vZ = iparticle1->Vz();
+        double px = iparticle1->Px();
+        double py = iparticle1->Py();
+        double pz = iparticle1->Pz();
+        int ptypecsv = TMath::Abs(iparticle1->GetPdgCode());
+        double masscsv = TDatabasePDG::Instance()->GetParticle(ptypecsv)->Mass();
+        binaryString = std::bitset<12>(event + 1).to_string() + std::bitset<12>(nMomGen).to_string() + std::bitset<16>(particleNumber++).to_string() + std::bitset<8>(0).to_string() + std::bitset<16>(0 * int(i - 1)).to_string();
+        barcode = std::stoull(binaryString, nullptr, 2);
+        fprintf(fpcsv, "%llu,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", barcode, ptypecsv, nMom, x + vX, y + vY, z + vZ, 0., px, py, pz, masscsv, charge);
+        if(i==1)
+          h7->Fill(10000*TMath::Sqrt(vX*vX+vY*vY+vZ*vZ)*mass/TMath::Sqrt(pxGenD*pxGenD+pyGenD*pyGenD+pzGenD*pzGenD));
+          //10^-2 cm -> 10^-6 um
+      }
+    }
+  
+  }
+  if (addSec){
     for (auto pdg : vPdg)
     {
       int avTot = GetMultiplicity(pdg, Eint, true) * GetBRatio(pdg);
@@ -547,7 +605,6 @@ void GenBgEvent(double x, double y, double z, int event, bool addBkg, bool addD0
   {
     nMomGen++;
     SetProcessParameters(Process, TMath::Abs(Eint));
-    GenMUONLMR *gener = new GenMUONLMR(7, 1);
     //      0         1        2         3         4        5           6         7
     //  "fPtPion","fPtKaon","fPtEta","fPtRho","fPtOmega","fPtPhi","fPtEtaPrime"  "fPtJPsi"
     gener->SetYParams(generYPtPar, 1., muon_y0SG, muon_sigySG, 0.);
@@ -589,13 +646,13 @@ void GenBgEvent(double x, double y, double z, int event, bool addBkg, bool addD0
     std::string binaryString = std::bitset<12>(event + 1).to_string() + std::string(12, '0') + std::bitset<16>(particleNumber++).to_string() + std::string(24, '0');
     unsigned long long barcode = std::stoull(binaryString, nullptr, 2);
 
-    float pxGenD = iparticle0->Px()+iparticle1->Px();
-    float pyGenD = iparticle0->Py()+iparticle1->Py();
-    float pzGenD = iparticle0->Pz()+iparticle1->Pz();
-    parent.SetPxPyPzE(iparticle0->Px()+iparticle1->Px(),iparticle0->Py()+iparticle1->Py(),iparticle0->Pz()+iparticle1->Pz(),iparticle0->Energy()+iparticle1->Energy());
+    float pxGenD = iparticle0->Px() + iparticle1->Px();
+    float pyGenD = iparticle0->Py() + iparticle1->Py();
+    float pzGenD = iparticle0->Pz() + iparticle1->Pz();
+    parent.SetPxPyPzE(iparticle0->Px() + iparticle1->Px(), iparticle0->Py() + iparticle1->Py(), iparticle0->Pz() + iparticle1->Pz(), iparticle0->Energy() + iparticle1->Energy());
     fprintf(fpcsv, "%llu,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", barcode, 443, nMomGen, x, y, z, 0., pxGenD, pyGenD, pzGenD, parent.M(), 0.0);
     fprintf(fpcsv_muons, "%llu,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", barcode, 443, nMomGen, x, y, z, 0., pxGenD, pyGenD, pzGenD, parent.M(), 0.0);
-    
+
     for (int i = 0; i < 2; i++)
     {
       TParticle *iparticle = gener->GetMuon(i);
@@ -609,14 +666,17 @@ void GenBgEvent(double x, double y, double z, int event, bool addBkg, bool addD0
       int ptypecsv = TMath::Abs(iparticle->GetPdgCode());
       double masscsv = TDatabasePDG::Instance()->GetParticle(ptypecsv)->Mass();
 
-      std::string binaryString = std::bitset<12>(event + 1).to_string() + std::bitset<12>(nMomGen).to_string() + std::bitset<16>(particleNumber++).to_string() + std::bitset<8>(0).to_string() + std::bitset<16>(0 * int(i - 1)).to_string();
+      //std::string binaryString = std::bitset<12>(event + 1).to_string() + std::bitset<12>(nMomGen*0).to_string() + std::bitset<16>(particleNumber++).to_string() + std::bitset<8>(0).to_string() + std::bitset<16>(0 * int(i - 1)).to_string();
+      //unsigned long long barcode = std::stoull(binaryString, nullptr, 2);
+
+
+      std::string binaryString = std::bitset<12>(event + 1).to_string() + std::string(12, '0') + std::bitset<16>(particleNumber++).to_string() + std::string(24, '0');
       unsigned long long barcode = std::stoull(binaryString, nullptr, 2);
 
       fprintf(fpcsv, "%llu,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", barcode, ptypecsv, 0, x + vX, y + vY, z + vZ, 0., px, py, pz, masscsv, charge);
       fprintf(fpcsv_muons, "%llu,%d,%d,%f,%f,%f,%f,%f,%f,%f,%f,%f\n", barcode, ptypecsv, 1, x + vX, y + vY, z + vZ, 0., px, py, pz, masscsv, charge);
     }
   }
-
 }
 
 void SetProcessParameters(const Char_t *Process, Double_t E)

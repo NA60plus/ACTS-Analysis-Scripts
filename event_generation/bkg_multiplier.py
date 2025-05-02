@@ -39,8 +39,8 @@ def copy_files_in_directory(src_dir, n):
 if __name__ == "__main__":
     # Set up argument parsing
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", dest="dir", type=str, help="Source directory containing the files to rename.", default="/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/event_generation/simulatedEvents/bkghits_120GeV_vt/")
-    parser.add_argument("-n", dest="ncopies", type=int, help="Value to add to the number in each filename.", default=1)
+    parser.add_argument("-d", dest="dir", type=str, help="Source directory containing the files to rename.", default="/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/event_generation/simulatedEvents/ms_long_bkghits_40GeV_ms/")
+    parser.add_argument("-n", dest="ncopies", type=int, help="Value to add to the number in each filename.", default=30)
     
     # Parse arguments
     args = parser.parse_args()

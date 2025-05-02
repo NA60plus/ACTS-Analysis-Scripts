@@ -340,12 +340,12 @@ void bkg_generator(int nev = -1, int Eint = 40, std::string flukaDirPrefix = "fl
             }
             int surface_ms = getSurface(lineValues[0]) - 10;
 
+            if (flukacode != 3 && flukacode != 4 && flukacode != 10 && flukacode != 11 && z < 400)
+            {
+              continue;
+            }
             if (z < zVTLim)
             {
-              if (flukacode != 3 && flukacode != 4)
-              {
-                continue;
-              }
               // volumes (8 bit) + boundaries (8 bit) layers (12 bit) + approach-surfaces (8 bit) + sensitive-surfaces (20 bit) + extra (8 bit)
               std::string binaryStringGeo = std::bitset<8>(1).to_string() + std::string(8, '0') + std::bitset<12>(surface).to_string() + std::string(8, '0') + std::bitset<20>(1).to_string() + std::string(8, '0');
               unsigned long long geometry_id = std::stoull(binaryStringGeo, nullptr, 2);
@@ -356,10 +356,6 @@ void bkg_generator(int nev = -1, int Eint = 40, std::string flukaDirPrefix = "fl
               std::string binaryStringGeo = std::bitset<8>(1).to_string() + std::string(8, '0') + std::bitset<12>(surface_ms).to_string() + std::string(8, '0') + std::bitset<20>(1).to_string() + std::string(8, '0');
               unsigned long long geometry_id = std::stoull(binaryStringGeo, nullptr, 2);
               fprintf(fpcsv_ms, "%llu,%llu,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%f,%i\n", particle_id, geometry_id, x, y, z, 0., px, py, pz, e, 0., 0., 0., 0., 0);
-            }
-            if (flukacode != 3 && flukacode != 4 && z < 400)
-            {
-              continue;
             }
             std::string binaryStringGeo = std::bitset<8>(1).to_string() + std::string(8, '0') + std::bitset<12>(surface).to_string() + std::string(8, '0') + std::bitset<20>(1).to_string() + std::string(8, '0');
             unsigned long long geometry_id = std::stoull(binaryStringGeo, nullptr, 2);

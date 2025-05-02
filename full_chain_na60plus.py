@@ -40,6 +40,7 @@ from acts.examples.reconstruction import (
     addContainerMerger,
     AmbiguityResolutionConfig,
     addVertexFitting,
+    addPropagation,
     addSecondaryVertexFitting,
     VertexFinder,
     CkfConfig,
@@ -73,6 +74,10 @@ def getArgumentParser():
     parser.add_argument("-g", "--geant4", help="Use Geant4", action="store_true")
 
     parser.add_argument("-ve", "--verbose", help="Use Geant4", action="store_true")
+
+    parser.add_argument("-b", "--bfield", help="", action="store_true")
+    parser.add_argument("-m", "--muons", help="", action="store_true")
+    parser.add_argument("-def", "--seeddef", help="", action="store_true")
 
     parser.add_argument("-d", "--dead", help="Apply dead zones", action="store_true")
     parser.add_argument(
@@ -161,7 +166,6 @@ def getArgumentParser():
         help="Remove bkg",
         action="store_true",
     )
-
 
     parser.add_argument(
         "-per",
@@ -429,14 +433,24 @@ def runFullChain(
     cutOffTrackWeight=0,
     cutOffTrackWeightReassign=0,
     rejectedFraction=0.9,
-    perigeeZ = 400,
-    addFluka = False
+    perigeeZ=400,
+    addFluka=False,
+    simpleB=False,
+    muons=False,
+    seeddef=True,
 ):
 
-    field = acts.examples.MagneticFieldMapXyz("bfield/BFieldNA60plus_longsetup.txt")
-    field2 = acts.examples.MagneticFieldMapXyz(
-        "bfield/BFieldNA60plus_ZRotated_longsetup.txt"
-    )
+    field = acts.examples.MagneticFieldMapXyz("bfield/NewBFieldNA60plus_longsetup.txt")
+    field2 = acts.examples.MagneticFieldMapXyz("bfield/NewBFieldNA60plus_longsetupRotated.txt")
+
+    if simpleB:
+        field = acts.examples.MagneticFieldMapXyz("bfield/BFieldNA60plus_longsetup.txt")
+        field2 = acts.examples.MagneticFieldMapXyz(
+            "bfield/BFieldNA60plus_ZRotated_longsetup.txt"
+        )
+        field = acts.ConstantBField(acts.Vector3(0.0, 0.3 * u.T, 0.0))
+        field2 = acts.ConstantBField(acts.Vector3(0.0, 0.0, -0.3 * u.T))
+    # field += field2
 
     rnd = acts.examples.RandomNumbers(seed=44)
 
@@ -453,20 +467,17 @@ def runFullChain(
         s,
         inputDir=inputDirVT,
         outputDirRoot=outputDir,
-        #det_suffix = ""
+        # det_suffix = ""
     )
-    addParticleReader(
-        s,
-        inputDir=inputDirMS,
-        outputDirRoot=outputDir,
-        det_suffix = "_ms"
-    )
+    addParticleReader(s, inputDir=inputDirMS, outputDirRoot=outputDir, det_suffix="_ms")
 
-    addSimHitsReader(
-        s,
-        inputDir="/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/event_generation/bkghits_40GeV_vt",
-        outputSimHits="simhittest",
-    )
+    if not options.muons:
+        addSimHitsReader(
+            s,
+            inputDir="/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/event_generation/simulatedEvents/ms_long_bkghits_40GeV_vt",
+            outputSimHits="simhittest",
+        )
+
     addFatras(
         s,
         trackingGeometryVT,
@@ -474,19 +485,24 @@ def runFullChain(
         rnd,
         preSelectParticles=ParticleSelectorConfig(
             eta=(None, None),
-            pt=(100 * u.MeV, None),
+            pt=(0 * u.MeV, None),
             removeNeutral=True,
         ),
         enableInteractions=True,
         outputDirRoot=outputDir,
-        #outputDirCsv=outputDir,
+        # outputDirCsv=outputDir,
         outputParticlesInitial="particles_initial_vt",
         outputParticlesFinal="particles_final_vt",
         outputSimHits="simhits_vt",
-        inputSimHits="simhittest" if addFluka else None,
+        inputSimHits="simhittest" if addFluka and not muons else None,
         det_suffix="_vt",
     )
 
+    addSimHitsReader(
+        s,
+        inputDir="/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/event_generation/simulatedEvents/ms_long_bkghits_40GeV_ms",
+        outputSimHits="simhittestms",
+    )
     addFatras(
         s,
         trackingGeometryMS,
@@ -494,18 +510,20 @@ def runFullChain(
         rnd,
         preSelectParticles=ParticleSelectorConfig(
             eta=(None, None),
-            pt=(100 * u.MeV, None),
+            pt=(0 * u.MeV, None),
             removeNeutral=True,
         ),
         outputDirRoot=outputDir,
-        #outputDirCsv=outputDir,
+        # outputDirCsv=outputDir,
         enableInteractions=True,
-        inputParticles = "particles_input_ms",
+        inputParticles="particles_input_ms",
         outputParticlesInitial="particles_initial_ms",
         outputParticlesFinal="particles_final_ms",
         outputSimHits="simhits_ms",
+        inputSimHits="simhittestms" if addFluka else None,
         det_suffix="_ms",
     )
+
     addDigitization(
         s,
         trackingGeometryVT,
@@ -638,7 +656,7 @@ def runFullChain(
             # NOT USED??? seems to be used in Orthogonal seeding
             y=(0 * u.mm, 400 * u.mm),
             yMiddle=(139 * u.mm, 170 * u.mm),  # use only layer 2 and 3
-            #yMiddle=(139 * u.mm, 220 * u.mm),  # use only layer 2 and 3
+            # yMiddle=(139 * u.mm, 220 * u.mm),  # use only layer 2 and 3
             seedConfirmation=False,  # WE ONLY HAVE 1 REGION
             seedConfirmationRange=acts.SeedConfirmationRangeConfig(  # it should not be used....
                 zMinSeedConf=-150 * u.mm,  # no need to change this
@@ -668,7 +686,7 @@ def runFullChain(
         seedingAlgorithmConfigArg=SEEDINGALGORITHMCONFIGARG,
         outputDirRoot=outputDir,
         verbose=False,
-        noGuessing=False,  # noGuessing,
+        noGuessing=noGuessing,
         trkVtxOnly=trkVtxOnly,
         projective=projective,
         zPerigee=zPerigee,
@@ -802,7 +820,6 @@ def runFullChain(
     #########
     # STEP 3
     #########
-
 
     addUsedMeasurementsFilter(
         s,
@@ -993,7 +1010,34 @@ def runFullChain(
         suffixOut="ambillllll",
         det_suffix="_vt",
     )
-
+    
+    addVertexFitting(
+        s,
+        field,
+        vertexFinder=VertexFinder.Iterative,
+        outputDirRoot=outputDir,
+        suffixIn="ambi",
+        trackParameters="ambitrackpars",
+        outputProtoVertices="protoverticesstep1",
+        outputVertices="fittedVerticesstep1",
+        inputParticles="particles",
+        selectedParticles="particles_selected_vt",
+        inputVertices="vertices_input",
+        suffixOut="_step1",
+        det_suffix="_vt",
+        logLevel=acts.logging.Level.DEBUG,
+        significanceCutSeeding=significanceCutSeeding,
+        maximumChi2cutForSeeding=maximumChi2cutForSeeding,
+        maxVertices=maxVertices,
+        createSplitVertices=createSplitVertices,
+        splitVerticesTrkInvFraction=splitVerticesTrkInvFraction,
+        reassignTracksAfterFirstFit=reassignTracksAfterFirstFit,
+        doMaxTracksCut=doMaxTracksCut,
+        maxTracks=maxTracks,
+        cutOffTrackWeight=cutOffTrackWeight,
+        cutOffTrackWeightReassign=cutOffTrackWeightReassign,
+        rejectedFraction=rejectedFraction,
+    )
     #########
     # MUON RECONSTRUCTION
     #########
@@ -1002,78 +1046,85 @@ def runFullChain(
         s,
         trackingGeometryMS,
         field2,
-        TruthSeedRanges(
-            pt=(100 * u.MeV, None),
-            eta=(None, None),
-            nHits=(6, None),
-            keep=(KeepPrimary, KeepSecondary),
-        ),
+        TruthSeedRanges(pt=(0, None), nHits=(5, None), keep=(True, True)),
         SeedFinderConfigArg(
             maxSeedsPerSpM=5,
-            cotThetaMax=1000000,  # 0.25,
-            deltaZMax=100000,
-            sigmaScattering=5.0,
+            cotThetaMax=0.25,
+            deltaZMax=500,  # was 5
+            sigmaScattering=50.0,
             radLengthPerSeed=0.01,
             minPt=100 * u.MeV,
-            impactMax=1000000 * u.mm,
+            impactMax=1000 * u.mm,  # was 0.1 0.15 //very impactful cut
             interactionPointCut=False,
-            useVariableMiddleSPRange=False,
+            useVariableMiddleSPRange=False,  # MODIFICATO 22/5/23
             deltaRMiddleSPRange=(
                 0 * u.mm,
-                10000000 * u.mm,
+                0 * u.mm,
             ),  # not useful if useVariableMiddleSPRange=False
             deltaRTopSP=(
                 350 * u.mm,
-                40000 * u.mm,
+                4000 * u.mm,
             ),  # min and max R between Middle and Top SP
             deltaRBottomSP=(
                 350 * u.mm,
-                40000 * u.mm,
+                4000 * u.mm,
             ),  # min and max R between Middle and Bottom SP
             collisionRegion=(-1000 * u.mm, 1000 * u.mm),
             r=(20 * u.mm, 9000 * u.mm),
-            rMiddle=(20 * u.mm, 9000 * u.mm),
             seedConfirmation=False,
-            forwardSeedConfirmationRange=acts.SeedConfirmationRangeConfig(
+            forwardSeedConfirmationRange=acts.SeedConfirmationRangeConfig(  # it should not be used....
                 zMinSeedConf=150 * u.mm,
                 zMaxSeedConf=0 * u.mm,
                 rMaxSeedConf=9000 * u.mm,
                 nTopForLargeR=1,
                 nTopForSmallR=1,
             ),
-            centralSeedConfirmationRange=acts.SeedConfirmationRangeConfig(
+            centralSeedConfirmationRange=acts.SeedConfirmationRangeConfig(  # it should not be used....
                 zMinSeedConf=7 * u.mm,
                 zMaxSeedConf=-7 * u.mm,
                 rMaxSeedConf=9000 * u.mm,
                 nTopForLargeR=1,
                 nTopForSmallR=1,
             ),
+            verbose=False,
         ),
         SeedFinderOptionsArg(
             beamPos=(0 * u.mm, 0 * u.mm),
-            bFieldInZ=0 * u.T,
-        ),
+            bFieldInZ=1.5 * u.T,  # WHY????????37?
+        ),  # why should I give the b field? to compute phi bins in SpacePointGrid.ipp
         SeedFilterConfigArg(  # not used, why?
             seedConfirmation=False,
             maxSeedsPerSpMConf=2,
             maxQualitySeedsPerSpMConf=1,
             compatSeedLimit=0,  # added 4/10/23 (value not tuned)
+            verbose=False,
         ),
         SpacePointGridConfigArg(
             rMax=9000 * u.mm,
-            zBinEdges=[-3200.0, -1600.0, 1600.0, 3200.0],
-            impactMax=0.1 * u.mm,
-            phiBinDeflectionCoverage=1,
+            zBinEdges=[
+                -3200.0,
+                -1600.0,
+                1600.0,
+                3200.0,
+            ],  # valori sensati???? forse devo stare in =- 3790/2
+            impactMax=0.1
+            * u.mm,  # not used if bfieldZ is 0, otherwise it's used to compute number of phi bins
+            phiBinDeflectionCoverage=1,  # not used if bfieldZ is 0, otherwise it's used to compute number of phi bins
         ),
         SeedingAlgorithmConfigArg(
             zBinNeighborsTop=[[0, 1], [-1, 1], [-1, 0]],
             zBinNeighborsBottom=[[0, 1], [-1, 1], [-1, 0]],
             numPhiNeighbors=1,
         ),
-        #      seedingAlgorithm=SeedingAlgorithm.TruthEstimated,
-        #    seedingAlgorithm=SeedingAlgorithm.Orthogonal,
-        seedingAlgorithm=SeedingAlgorithm.Default,
+        TruthEstimatedSeedingAlgorithmConfigArg(
+            deltaR=(0, 10000),
+        ),
+        # seedingAlgorithm=SeedingAlgorithm.Default,
+        seedingAlgorithm=(
+            SeedingAlgorithm.Default #if seeddef else SeedingAlgorithm.TruthSmeared
+        ),
         geoSelectionConfigFile=jsonSeedMS,
+        particleHypothesis=acts.ParticleHypothesis.muon,
         outputDirRoot=outputDir,
         logLevel=acts.logging.DEBUG,
         inputSourceLinks="sourcelinks_ms",
@@ -1084,7 +1135,9 @@ def runFullChain(
         doTrkVtx=False,  # switch of the vertexing with the tracklets
         inputParticles="particles_ms",
         verbose=True,
-        initialVarInflation = [50., 50., 10., 10., 10., 10.]
+        initialVarInflation=(
+            [1, 1, 1, 1, 1, 1] #[50.0, 50.0, 10.0, 10.0, 10.0, 10.0] #if seeddef else 
+        ),
     )
 
     addCKFTracks(
@@ -1092,17 +1145,11 @@ def runFullChain(
         trackingGeometryMS,
         field,
         TrackSelectorConfig(
-            pt=(100 * u.MeV, None),
+            pt=(0 * u.MeV, None),
             absEta=(None, None),
             nMeasurementsMin=5,
         ),
-        CkfConfig(
-            chi2CutOff=15,
-            numMeasurementsCutOff=1,
-            maxSteps=None,
-            seedDeduplication=False,
-            stayOnSeed=True,
-        ),
+        CkfConfig(chi2CutOff=100, numMeasurementsCutOff=2),
         outputDirRoot=outputDir,
         inputSourceLinks="sourcelinks_ms",
         inputMeasurements="measurements_ms",
@@ -1113,33 +1160,81 @@ def runFullChain(
 
     addAmbiguityResolution(
         s,
-        AMBIGUITYRESOLUTIONCONFIG,
+        AmbiguityResolutionConfig(
+            maximumSharedHits=1,  
+            maximumIterations=1000000,
+            nMeasurementsMin=5,
+        ),
+        # AMBIGUITYRESOLUTIONCONFIG,
         outputDirRoot=outputDir,
         suffixIn="ms",
         suffixOut="ambims",
         det_suffix="_ms",
     )
-
-    #########
-    # MATCHING
-    #########
     """
+    converter = acts.examples.TracksToParameters(
+        level=acts.logging.INFO,
+        inputTracks="ambimstracks",
+        outputTrackParameters="selectedTracksParametersVertexing",
+    )
+    s.addAlgorithm(converter)
+    """
+
+
+    addVertexFitting(
+        s,
+        field,
+        vertexFinder=VertexFinder.Truth,
+        outputDirRoot=outputDir,
+        suffixIn="ambims",
+        trackParameters="ambimstrackpars",
+        outputProtoVertices="protoverticestruth",
+        outputVertices="fittedVerticestruth",
+        inputParticles="particles_ms",
+        inputVertices="vertices_input_ms",
+        selectedParticles="particles_selected_ms",
+        suffixOut="_truth",
+        #logLevel=acts.logging.Level.VERBOSE,
+        doConstrainedFit = True
+    )
+
     addContainerMerger(
         s,
-        inputTrackParameters=["ambitrackpars","ambilltrackpars","ambilllltrackpars","ambilllllltrackpars"],
-        outputTrackParameters="mergedtrackpars",   
-        inputTracks=["ambitracks","ambilltracks","ambilllltracks","ambilllllltracks"],
-        outputTracks="mergedtracks" 
+        inputTrackParameters=[
+            "ambitrackpars",
+            "ambilltrackpars",
+            "ambilllltrackpars",
+            "ambilllllltrackpars",
+        ],
+        outputTrackParameters="mergedtrackpars",
+        inputTracks=[
+            "ambitracks",
+            "ambilltracks",
+            "ambilllltracks",
+            "ambilllllltracks",
+        ],
+        outputTracks="mergedtracks",
     )
-    """
+
     addMatching(
         s,
         trackingGeometry=trackingGeometryVT,
         magneticField=field,
+        inputVertices="fittedVerticesstep1",
         inputTrackParametersMS=["ambimstrackpars"],
-        inputTrackParametersVT=["ambitrackpars","ambilltrackpars","ambilllltrackpars","ambilllllltrackpars"],
+        inputTrackParametersVT=[
+            "ambitrackpars",
+            "ambilltrackpars",
+            "ambilllltrackpars",
+            "ambilllllltrackpars",
+        ],
         inputTrackContainerMS=["ambimstracks"],
-        inputTrackContainerVT=["ambitracks","ambilltracks","ambilllltracks","ambilllllltracks"], #"ambitracks",
+        inputTrackContainerVT=[
+            "ambitracks",
+            "ambilltracks",
+            "ambilllltracks",
+            "ambilllllltracks",
+        ],  # "ambitracks",
         outputTrackParameters="outputTrackParameters",
         outputTracks="outputTracks",
         useRecVtx=False,
@@ -1149,9 +1244,50 @@ def runFullChain(
         chi2max=10000000,
     )
 
+    return s
+    #########
+    # MATCHING
+    #########
+    addPropagation(
+        s,
+        trackingGeometryVT,
+        field,
+        inputTrackParameters=[
+            "ambitrackpars",
+            "ambilltrackpars",
+            "ambilllltrackpars",
+            "ambilllllltrackpars",
+        ],
+        # inputTracks=["ambitracks","ambilltracks","ambilllltracks","ambilllllltracks"],
+        inputVertices="fittedVerticesstep1",
+        outputTracks="mergetracks",
+        outputDirRoot=outputDir,
+        useRecVtx=False,
+        suffixOut="merged",
+        det_suffix="_vt",
+    )
+    """
     #########
     # VERTEXING AND PROPAGATION TO THE PV
     #########
+
+    """
+
+    addVertexFitting(
+        s,
+        field,
+        vertexFinder=VertexFinder.Truth,
+        outputDirRoot=outputDir,
+        suffixIn="ambi",
+        trackParameters="ambitrackpars",
+        outputProtoVertices="protoverticestruth",
+        outputVertices="fittedVerticestruth",
+        suffixOut="_truth",
+        logLevel=acts.logging.Level.DEBUG,
+    )
+
+    """
+    """
 
     addVertexFitting(
         s,
@@ -1159,13 +1295,10 @@ def runFullChain(
         vertexFinder=VertexFinder.Iterative,
         outputDirRoot=outputDir,
         suffixIn="ambi",
-        trackParameters="ambitrackpars",
-        outputProtoVertices="protoverticesstep1",
-        outputVertices="fittedVerticesstep1",
-        inputParticles = "particles",
-        selectedParticles = "particles_selected_vt",
-        inputVertices = "vertices_input",
-        suffixOut="_step1",
+        trackParameters="mergedtrackpars",
+        outputProtoVertices="protoverticesmerged",
+        outputVertices="fittedVerticesmerged",
+        suffixOut="_merged",
         logLevel=acts.logging.Level.DEBUG,
         significanceCutSeeding=significanceCutSeeding,
         maximumChi2cutForSeeding=maximumChi2cutForSeeding,
@@ -1180,53 +1313,6 @@ def runFullChain(
         rejectedFraction=rejectedFraction,
     )
 
-    return s
-    """
-
-    addVertexFitting(
-        s,
-        field,
-        vertexFinder=VertexFinder.Truth,
-        outputDirRoot=outputDir,
-        suffixIn= "ambi",
-        trackParameters="ambitrackpars",
-        outputProtoVertices= "protoverticestruth",
-        outputVertices= "fittedVerticestruth",
-        suffixOut = "_truth",
-        logLevel=acts.logging.Level.DEBUG,
-        
-    )
-    
-    """
-    """
-    
-    addVertexFitting(
-        s,
-        field,
-        vertexFinder=VertexFinder.Iterative,
-        outputDirRoot=outputDir,
-        suffixIn= "ambi",
-        trackParameters="mergedtrackpars",
-        outputProtoVertices= "protoverticesmerged",
-        outputVertices= "fittedVerticesmerged",
-        suffixOut = "_merged",
-        logLevel=acts.logging.Level.DEBUG,
-        significanceCutSeeding=significanceCutSeeding,
-        maximumChi2cutForSeeding=maximumChi2cutForSeeding,
-        maxVertices=maxVertices,
-        createSplitVertices=createSplitVertices,
-        splitVerticesTrkInvFraction=splitVerticesTrkInvFraction,
-        reassignTracksAfterFirstFit=reassignTracksAfterFirstFit,
-        doMaxTracksCut=doMaxTracksCut,
-        maxTracks=maxTracks,
-        cutOffTrackWeight=cutOffTrackWeight,
-        cutOffTrackWeightReassign=cutOffTrackWeightReassign,
-        rejectedFraction=rejectedFraction
-        
-    )
-    
-
-    """
     """
 
 
@@ -1259,7 +1345,7 @@ if "__main__" == __name__:
     if options.fullev:
         event_type += "_FullEv"
 
-    dir = "event_generation/events_" + str(Eint) + "GeV" + event_type
+    dir = "event_generation/simulatedEvents/events_" + str(Eint) + "GeV" + event_type
 
     target_option = (
         "_onlyTarget_" + str(options.target) if options.target != -1 else "_realTarget"
@@ -1274,41 +1360,41 @@ if "__main__" == __name__:
     else:
         beamsize = "0.500000"
     if options.periferal != 1:
+        zeros = "00000" if options.periferal >= 0.1 else "0000"
+
+        def check_last_digit_is_5(num: float) -> bool:
+            # Convert the float to a string
+            num_str = f"{num:.10f}".rstrip("0").rstrip(
+                "."
+            )  # Adjust the precision as needed
+            # Check if the last character is '5'
+            return num_str[-1] == "5"
+
+        if check_last_digit_is_5(options.periferal) and options.periferal != 0.5:
+            zeros = "0000"
         dir = (
-            "event_generation/events_40GeV"
+            "event_generation/simulatedEvents/events_40GeV_D0"
             + has_sec
             + target_option
             + "_beamSigma_"
             + beamsize
+            + "_jpsi"
             + "_periferal_factor_"
             + str(options.periferal)
-            + ("00000" if options.periferal >= 0.1 else "0000")
+            + zeros
         )
     else:
         dir = (
-            "event_generation/events_40GeV"
+            "event_generation/simulatedEvents/events_40GeV_D0"
             + has_sec
             + target_option
             + "_beamSigma_"
             + beamsize
-            + ""
+            + "_jpsi"
         )
-
-    # dir ="event_generation/events_40GeV_Sec_periferal_factor_0.100000"
-
-    dirMS = "event_generation/events_40GeV_noBkg_jpsi_muons"
-    dirVT = "event_generation/events_40GeV_noBkg_jpsi_muons"
-
-    dirMS = "event_generation/events_40GeV_Sec_realTarget_beamSigma_0.500000_jpsi_muons"
-    dirVT = "event_generation/events_40GeV_Sec_realTarget_beamSigma_0.500000_jpsi_muons"
-
-
-
-
-    dirMS = "event_generation/events_158GeV_Sec_jpsi_muons"
-    dirVT = "event_generation/events_158GeV_Sec_jpsi"
-    dirMS = "event_generation/events_40GeV_Sec_realTarget_beamSigma_0.500000_jpsi_muons"
-    dirVT = "event_generation/events_40GeV_Sec_realTarget_beamSigma_0.500000_jpsi"
+    dir = "event_generation/simulatedEvents/events_40GeV_Sec_omega2Body"
+    dirMS = dir + "_muons"
+    dirVT = dir + ""
 
     inputDirVT = pathlib.Path.cwd() / dirVT
     inputDirMS = pathlib.Path.cwd() / dirMS
@@ -1362,35 +1448,28 @@ if "__main__" == __name__:
         suffix += "_beam0.0"
     else:
         suffix += "_beam0.5"
-    if options.periferal != 1:
-        dir = (
-            "event_generation/events_40GeV"
-            + has_sec
-            + target_option
-            + "_beamSigma_"
-            + beamsize
-            + "_periferal_factor_"
-            + str(options.periferal)
-            + ("00000" if options.periferal >= 0.1 else "0000")
-        )
-    else:
-        dir = (
-            "event_generation/events_40GeV"
-            + has_sec
-            + target_option
-            + "_beamSigma_"
-            + beamsize
-            + ""
-        )
 
     if options.sf_maxVertices != 1:
         suffix += "_nVtxMax" + str(options.sf_maxVertices)
     if options.fluka:
         suffix += "_fluka"
+    if options.bfield:
+        suffix += "_bfield"
+    if options.muons:
+        suffix += "_muons_omega"
+        dir = "event_generation/simulatedEvents/events_40GeV_noBkg_realTarget_beamSigma_0.500000_jpsi_periferal_factor_0.001000_muons"
+        dir = "event_generation/simulatedEvents/events_158GeV_D0_omega_muons"
+        dir = "event_generation/simulatedEvents/events_40GeV_noBkg_jpsi_muons"
+        suffix+="_jpsi"
+        dir = "event_generation/simulatedEvents/events_40GeV_noBkg_omega2Body_muons"
+        suffix+="_omega2Body"
+        inputDirMS = pathlib.Path.cwd() / dir
+        inputDirVT = inputDirMS
 
     suffix += "_twosteps_rej" + str(options.sf_rejectedFraction)
-    suffix += "_perigeeZ"+str(options.vz)
-    suffix += "_suffix"
+    suffix += "_perigeeZ" + str(options.vz)
+    suffix += "_seeddef" if options.seeddef else "_noSeeddef"
+    suffix += "_bot_chi2100_inf"
 
     current_dir = pathlib.Path.cwd()
     if options.outdir:
@@ -1400,7 +1479,9 @@ if "__main__" == __name__:
             current_dir / ("output/output_" + str(Eint) + "GeV" + event_type + suffix)
         )
 
-    matDeco = acts.IMaterialDecorator.fromFile("geometry/geomVTNA60p/material-map_VTNA60p.json")
+    matDeco = acts.IMaterialDecorator.fromFile(
+        "geometry/geomVTNA60p/material-map_VTNA60p.json"
+    )
     jsonFile = "geometry/geomVTNA60p/tgeo-config_VTNA60p.json"
     tgeo_fileName = "geometry/geomVTNA60p/geom_VTNA60p.root"
     jsonDigiVT = "geometry/geomVTNA60p/digismear0.005.json"
@@ -1416,12 +1497,18 @@ if "__main__" == __name__:
         volumeLogLevel=customLogLevel(),
         mdecorator=matDeco,
     )
-
+    """
     matDeco = acts.IMaterialDecorator.fromFile(
         "geometry/geomMuonsLongSetup/material-map_muons_longsetup.json"
     )
     jsonFile = "geometry/geomMuonsLongSetup/tgeo-config_muons_longsetup.json"
     tgeo_fileName = "geometry/geomMuonsLongSetup/geom_muons_longsetup.root"
+    """
+    matDeco = acts.IMaterialDecorator.fromFile(
+        "geometry/geomNoAbs/material-map_muons_longsetup_noabs.json"
+    )
+    jsonFile = "geometry/geomNoAbs/tgeo-config_muons_longsetup_noabs.json"
+    tgeo_fileName = "geometry/geomNoAbs/geom_muons_longsetup_noabs.root"
 
     jsonDigiMS = "geometry/geomMuonsLongSetup/digismearMS.json"
     jsonSeedMS = "geometry/geomMuonsLongSetup/seed_configMS.json"
@@ -1480,8 +1567,11 @@ if "__main__" == __name__:
         cutOffTrackWeight=options.sf_cutOffTrackWeight,
         cutOffTrackWeightReassign=options.sf_cutOffTrackWeightReassign,
         rejectedFraction=options.sf_rejectedFraction,
-        perigeeZ = options.vz,
-        addFluka=options.fluka
+        perigeeZ=options.vz,
+        addFluka=options.fluka,
+        simpleB=options.bfield,
+        muons=options.muons,
+        seeddef=options.seeddef,
     ).run()
     end_time = time.time()
 

@@ -667,7 +667,6 @@ def runVTchain(
         verbose=True,
         noGuessing=noGuessing,
         trkVtxOnly = trkVtxOnly,
-        addDeltas = addDeltas,
         projective=projective,
         zPerigee = zPerigee
     )
@@ -1007,6 +1006,7 @@ def runVTchain(
     )
     
 
+    """
     addVertexFitting(
         s,
         field,
@@ -1031,7 +1031,6 @@ def runVTchain(
         rejectedFraction=rejectedFraction
         
     )
-    """
 
 
     addContainerMerger(
@@ -1101,6 +1100,7 @@ if "__main__" == __name__:
     else:
         dir = "event_generation/events_40GeV"+has_sec+target_option+"_beamSigma_"+beamsize+""
 
+    dir = "event_generation/simulatedEvents/events_40GeV_Sec_omega2Body"
     #dir ="event_generation/events_40GeV_Sec_periferal_factor_0.100000"
 
     inputDir = pathlib.Path.cwd() / dir
