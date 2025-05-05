@@ -1,28 +1,14 @@
 #!/usr/bin/env python3
 from pathlib import Path
-import os
-
-import shutil
-import os
 import argparse
 import pathlib
 import acts
 import acts.examples
-import time
-
-
-from acts.examples import (
-    GaussianVertexGenerator,
-    ParametricParticleGenerator,
-    FixedMultiplicityGenerator,
-    EventGenerator,
-)
 
 from acts import UnitConstants as u
 
 from acts.examples.simulation import (
     addParticleReader,
-    addParticleGun,
     addFatras,
     addSimHitsReader,
     ParticleSelectorConfig,
@@ -53,10 +39,6 @@ from acts.examples.reconstruction import (
     TruthEstimatedSeedingAlgorithmConfigArg,
     SeedingAlgorithm,
     addMatching,
-    addGx2fTracks,
-    addKalmanTracks,
-    addTrajectoriesToPrototracks,
-    addTracksToTrajectories,
 )
 from acts.examples import TGeoDetector
 
@@ -65,69 +47,13 @@ def getArgumentParser():
     """Get arguments from command line"""
     parser = argparse.ArgumentParser(description="Command line arguments for CKF")
 
-    parser.add_argument(
-        "-o",
-        "--output",
-        dest="outdir",
-        help="Output directory for new ntuples",
-        default=None,
-    )
-    parser.add_argument(
-        "-n",
-        "--nEvents",
-        dest="nEvts",
-        help="Number of events to run over",
-        default=1,
-        type=int,
-    )
-
-    parser.add_argument("-ve", "--verbose", help="Verobese output", action="store_true")
-
-    parser.add_argument("-b", "--bfield", help="", action="store_true")
-    parser.add_argument("-m", "--muons", help="", action="store_true")
+    parser.add_argument("-n", "--nevents", help="Number of events to run over", default=1, type=int)
+    parser.add_argument("-ve", "--verbose", help="Verbose output", action="store_true")
     parser.add_argument("-def", "--seeddef", help="", action="store_true")
-
-    parser.add_argument("-d", "--dead", help="Apply dead zones", action="store_true")
-    parser.add_argument(
-        "-f", "--fast", help="Apply fast sim selections", action="store_true"
-    )
-
-    parser.add_argument(
-        "-st", "--primary", help="No primary particles", action="store_true"
-    )
-
-    parser.add_argument(
-        "-nd", "--secondary", help="No secondary particles", action="store_true"
-    )
-
-    parser.add_argument(
-        "-gu", "--noguessing", help="No secondary particles", action="store_true"
-    )
-
-    parser.add_argument(
-        "-sec", "--sec", help="No secondary particles", action="store_true"
-    )
-    parser.add_argument(
-        "-prim", "--prim", help="Ruben framework primaries", action="store_true"
-    )
-
-    parser.add_argument(
-        "-trk",
-        "--trkVtxOnly",
-        dest="trkVtxOnly",
-        help="Remove bkg",
-        action="store_true",
-    )
-
-    #########################
-    parser.add_argument(
-        "-ef",
-        "--eff",
-        dest="eff",
-        help="Detector efficiency",
-        type=float,
-        default=None,
-    )
+    parser.add_argument("-st", "--primary", help="No primary particles", action="store_true")
+    parser.add_argument("-nd", "--secondary", help="No secondary particles", action="store_true")
+    parser.add_argument("-gu", "--noguessing", help="No tracklet primary vertex ID", action="store_true")
+    parser.add_argument("-prim", "--prim", help="Load csv with only the primary particles hits", action="store_true")
 
     # arguments for the seeding
     parser.add_argument(
@@ -158,7 +84,7 @@ def getArgumentParser():
     parser.add_argument(
         "--sf_seedConfirmation_primary",
         dest="sf_seedConfirmation_primary",
-        help="Use seed confirmation",
+        help="Use seed confirmation in the first two steps",
         type=bool,
         default=False,
     )
@@ -166,7 +92,7 @@ def getArgumentParser():
     parser.add_argument(
         "--sf_seedConfirmation_secondary",
         dest="sf_seedConfirmation_secondary",
-        help="Use seed confirmation",
+        help="Use seed confirmation in the last two steps",
         type=bool,
         default=False,
     )
@@ -202,13 +128,6 @@ def getArgumentParser():
         default=-1,
     )
 
-    parser.add_argument(
-        "-geo",
-        dest="geometry",
-        help="Use seed confirmation",
-        type=int,
-        default=0,
-    )
 
     # for vtx optimization
     #  significanceCutSeeding
@@ -243,7 +162,7 @@ def getArgumentParser():
         dest="sf_significanceCutSeeding",
         help="",
         type=float,
-        default=10,  # 0.06758286918225764,
+        default=10,
     )
 
     parser.add_argument(
@@ -334,7 +253,6 @@ def runFullChain(
     DeltaZMax=5,
     NumMeasurementsCutOff=5,
     verbose=False,
-    Efficiency=None,
     KeepPrimary=True,
     KeepSecondary=True,
     noGuessing=False,
@@ -479,7 +397,7 @@ def runFullChain(
         initialSigmas=None,
         initialVarInflation=None,
         seedFinderConfigArg=SeedFinderConfigArgNA60(
-            maxSeedsPerSpM=1,  # MaxSeedsPerSpMPrimary,
+            maxSeedsPerSpM= MaxSeedsPerSpMPrimary,
             cotThetaMax=CotThetaMax,
             sigmaScattering=SigmaScattering,
             radLengthPerSeed=RadLengthPerSeed,
@@ -696,12 +614,12 @@ def runFullChain(
             deltaYTopSP=(10 * u.mm, 1000 * u.mm),
             # min and max R between Middle and Bottom SP
             deltaYBottomSP=(10 * u.mm, 1000 * u.mm),
-            impactMax=10 * u.cm,
+            impactMax=100 * u.cm,
             deltaZMax=10000 * u.cm,  # was 5
             minPt=100 * u.MeV,
             interactionPointCut=False,
             verbose=verbose,
-            collisionRegion=(-10 * u.cm, 10 * u.cm),  # 0.5
+            collisionRegion=(-100 * u.cm, 100 * u.cm),  # 0.5
             # NOT USED??? seems to be used in Orthogonal seeding
             y=(0 * u.mm, 400 * u.mm),
             yMiddle=(139 * u.mm, 170 * u.mm),  # use only layer 2 and 3
@@ -797,12 +715,12 @@ def runFullChain(
             deltaYTopSP=(10 * u.mm, 1000 * u.mm),
             # min and max R between Middle and Bottom SP
             deltaYBottomSP=(10 * u.mm, 300 * u.mm),
-            impactMax=10 * u.cm,
+            impactMax=100 * u.cm,
             deltaZMax=10000 * u.cm,  # was 5
             minPt=100 * u.MeV,
             interactionPointCut=False,
             verbose=verbose,
-            collisionRegion=(-10 * u.cm, 10 * u.cm),  # 0.5
+            collisionRegion=(-100 * u.cm, 100 * u.cm),  # 0.5
             # NOT USED??? seems to be used in Orthogonal seeding
             y=(0 * u.mm, 400 * u.mm),
             yMiddle=(170 * u.mm, 220 * u.mm),  # use only layer 2 and 3
@@ -869,42 +787,15 @@ def runFullChain(
         det_suffix="_vt",
     )
 
-    addVertexFitting(
-        s,
-        field,
-        vertexFinder=VertexFinder.Iterative,
-        outputDirRoot=outputDir,
-        suffixIn="ambi",
-        trackParameters="ambitrackpars",
-        outputProtoVertices="protoverticesstep1",
-        outputVertices="fittedVerticesstep1",
-        inputParticles="particles",
-        selectedParticles="particles_selected",
-        inputVertices="vertices_input",
-        suffixOut="_step1",
-        det_suffix="_vt",
-        logLevel=acts.logging.Level.DEBUG,
-        significanceCutSeeding=significanceCutSeeding,
-        maximumChi2cutForSeeding=maximumChi2cutForSeeding,
-        maxVertices=maxVertices,
-        createSplitVertices=createSplitVertices,
-        splitVerticesTrkInvFraction=splitVerticesTrkInvFraction,
-        reassignTracksAfterFirstFit=reassignTracksAfterFirstFit,
-        doMaxTracksCut=doMaxTracksCut,
-        maxTracks=maxTracks,
-        cutOffTrackWeight=cutOffTrackWeight,
-        cutOffTrackWeightReassign=cutOffTrackWeightReassign,
-        rejectedFraction=rejectedFraction,
-    )
+    """
 
-    return s
     addPropagation(
         s,
         trackingGeometry,
         field,
         inputTrackParameters=["ambitrackpars", "ambilltrackpars"],
         # inputTracks=["ambitracks","ambilltracks","ambilllltracks","ambilllllltracks"],
-        inputVertices="fittedVerticesstep1",
+        inputVertices="fittedVertices",
         outputTracks="mergetracks",
         outputDirRoot=outputDir,
         useRecVtx=False,
@@ -912,6 +803,7 @@ def runFullChain(
         det_suffix="",
     )
 
+    """
     #########
     # MUON RECONSTRUCTION
     #########
@@ -922,9 +814,9 @@ def runFullChain(
         field_rotated,
         TruthSeedRanges(
             pt=(0, None),
-            nHits=(5, None),
+            nHits=(6, None),
             nHitsVT=(None, None),
-            nHitsMS=(5, None),
+            nHitsMS=(6, None),
             isMuon=True,
             keep=(True, True),
         ),
@@ -1037,9 +929,9 @@ def runFullChain(
         TrackSelectorConfig(
             pt=(0 * u.MeV, None),
             absEta=(None, None),
-            nMeasurementsMin=5,
+            nMeasurementsMin=6,
         ),
-        CkfConfig(chi2CutOff=15, numMeasurementsCutOff=5, stayOnSeed=True),
+        CkfConfig(chi2CutOff=150, numMeasurementsCutOff=5, stayOnSeed=True),
         outputDirRoot=outputDir,
         inputSourceLinks="sourcelinksMS",
         inputMeasurements="measurements",
@@ -1057,13 +949,42 @@ def runFullChain(
         AmbiguityResolutionConfig(
             maximumSharedHits=1,
             maximumIterations=1000000,
-            nMeasurementsMin=5,
+            nMeasurementsMin=6,
         ),
         outputDirRoot=outputDir,
         suffixIn="ms",
         suffixOut="ambims",
         det_suffix="_ms",
     )
+
+    addVertexFitting(
+        s,
+        field,
+        vertexFinder=VertexFinder.Iterative,
+        outputDirRoot=outputDir,
+        suffixIn="ambi",
+        trackParameters="ambitrackpars",
+        outputProtoVertices="protovertices",
+        outputVertices="fittedVertices",
+        inputParticles="particles",
+        selectedParticles="particles_selected",
+        inputVertices="vertices_input",
+        suffixOut="_vertex",
+        det_suffix="_vt",
+        logLevel=acts.logging.Level.DEBUG,
+        significanceCutSeeding=significanceCutSeeding,
+        maximumChi2cutForSeeding=maximumChi2cutForSeeding,
+        maxVertices=maxVertices,
+        createSplitVertices=createSplitVertices,
+        splitVerticesTrkInvFraction=splitVerticesTrkInvFraction,
+        reassignTracksAfterFirstFit=reassignTracksAfterFirstFit,
+        doMaxTracksCut=doMaxTracksCut,
+        maxTracks=maxTracks,
+        cutOffTrackWeight=cutOffTrackWeight,
+        cutOffTrackWeightReassign=cutOffTrackWeightReassign,
+        rejectedFraction=rejectedFraction,
+    )
+    return s
 
     addContainerMerger(
         s,
@@ -1088,7 +1009,7 @@ def runFullChain(
         s,
         trackingGeometry=trackingGeometry,
         magneticField=field,
-        inputVertices="fittedVerticesstep1",
+        inputVertices="fittedVertices",
         inputTrackParametersMS=["ambimstrackpars"],
         inputTrackParametersVT=["mergedtrackpars"],
         inputTrackContainerMS=["ambimstracks"],
@@ -1104,8 +1025,6 @@ def runFullChain(
         outputDirRoot=outputDir,
         useGSF=False,
     )
-
-    return s
 
     addVertexFitting(
         s,
@@ -1124,12 +1043,11 @@ def runFullChain(
         doConstrainedFit=True,
     )
 
-    return s
     addMatching(
         s,
         trackingGeometry=trackingGeometry,
         magneticField=field,
-        inputVertices="fittedVerticesstep1",
+        inputVertices="fittedVertices",
         inputTrackParametersMS=["ambimstrackpars"],
         inputTrackParametersVT=[
             "ambitrackpars",
@@ -1168,31 +1086,6 @@ def runFullChain(
 
     """
 
-    addVertexFitting(
-        s,
-        field,
-        vertexFinder=VertexFinder.Iterative,
-        outputDirRoot=outputDir,
-        suffixIn="ambi",
-        trackParameters="mergedtrackpars",
-        outputProtoVertices="protoverticesmerged",
-        outputVertices="fittedVerticesmerged",
-        suffixOut="_merged",
-        logLevel=acts.logging.Level.DEBUG,
-        significanceCutSeeding=significanceCutSeeding,
-        maximumChi2cutForSeeding=maximumChi2cutForSeeding,
-        maxVertices=maxVertices,
-        createSplitVertices=createSplitVertices,
-        splitVerticesTrkInvFraction=splitVerticesTrkInvFraction,
-        reassignTracksAfterFirstFit=reassignTracksAfterFirstFit,
-        doMaxTracksCut=doMaxTracksCut,
-        maxTracks=maxTracks,
-        cutOffTrackWeight=cutOffTrackWeight,
-        cutOffTrackWeightReassign=cutOffTrackWeightReassign,
-        rejectedFraction=rejectedFraction,
-    )
-
-
 if "__main__" == __name__:
     options = getArgumentParser().parse_args()
 
@@ -1212,8 +1105,6 @@ if "__main__" == __name__:
         if options.prim:
             dir_suffix = "_primaries"
 
-        dir = "event_generation/simulatedEvents/rubenxprino_40GeV_omega" + dir_suffix
-        suffix = "rubenxprino_40GeV_omega" + dir_suffix
 
     matDeco = acts.IMaterialDecorator.fromFile(
         "geometry/geoRubenNoCarbonNew/material-map.json"
@@ -1230,15 +1121,10 @@ if "__main__" == __name__:
     current_dir = pathlib.Path.cwd()
     outputDir = str(current_dir / ("output/output_" + suffix))
 
-    if options.geometry == 1 or options.geometry == 2:
-        jsonDigi = "geometry/geomVTMSLong/digismearVTMS2.json"
-        jsonSeedVT1 = "geometry/geomVTMSLong/seed_configVTMS2.json"
-        jsonSeedVT2 = "geometry/geomVTMSLong/seed_configVTMS2.json"
-    else:
-        jsonDigi = "geometry/geomVTMSLong/digismearVTMS3.json"
-        jsonSeedVT1 = "geometry/geomVTMSLong/seed_configVTMS.json"
-        jsonSeedVT2 = "geometry/geomVTMSLong/seed_configVTMS.json"
-    jsonSeedMS = "geometry/geomVTMSLong/seed_configMS.json"
+    jsonDigi = "geometry/digismearVTMS.json"
+    jsonSeedVT1 = "geometry/seed_configVT.json"
+    jsonSeedVT2 = "geometry/seed_configVT.json"
+    jsonSeedMS = "geometry/seed_configMS.json"
 
     logLevel = acts.logging.INFO
     customLogLevel = acts.examples.defaultLogging(logLevel=logLevel)
@@ -1253,12 +1139,12 @@ if "__main__" == __name__:
     runFullChain(
         trackingGeometry,
         inputDir=pathlib.Path.cwd() / dir,
-        outputDir=outputDir if options.outdir == None else options.outdir,
+        outputDir=outputDir,
         jsonDigi=jsonDigi,
         jsonSeedVT1=jsonSeedVT1,
         jsonSeedVT2=jsonSeedVT2,
         jsonSeedMS=jsonSeedMS,
-        NumEvents=options.nEvts,
+        NumEvents=options.nevents,
         MaxSeedsPerSpMPrimary=options.sf_maxSeedsPerSpM_primary,
         MaxSeedsPerSpMSecondary=options.sf_maxSeedsPerSpM_secondary,
         SeedConfirmationPrimary=options.sf_seedConfirmation_primary,
@@ -1267,11 +1153,10 @@ if "__main__" == __name__:
         DeltaZMax=options.sf_deltaZMax,
         NumMeasurementsCutOff=options.sf_numMeasurementsCutOff,
         verbose=options.verbose,
-        Efficiency=options.eff,
         KeepPrimary=not options.primary,
         KeepSecondary=not options.secondary,
         noGuessing=options.noguessing,
-        trkVtxOnly=options.trkVtxOnly,
+        trkVtxOnly=False,
         significanceCutSeeding=options.sf_significanceCutSeeding,
         maximumChi2cutForSeeding=options.sf_maximumChi2cutForSeeding,
         maxVertices=options.sf_maxVertices,
