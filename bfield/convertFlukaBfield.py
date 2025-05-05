@@ -1,5 +1,7 @@
 import re
 import ROOT
+import numpy as np
+from scipy.ndimage import zoom
 
 ROOT.gStyle.SetTitleSize(0.05, "XYZ") # Sets the size for X, Y, and Z axis titles
 ROOT.gStyle.SetTitleFontSize(0.05) # Sets the size for the histogram title
@@ -9,51 +11,7 @@ ROOT.gStyle.SetPadRightMargin(0.05)  #Set right margin
 ROOT.gStyle.SetPadTopMargin(0.05)    #Set top margin
 ROOT.gStyle.SetPadBottomMargin(0.15) #Set bottom margin
 ROOT.gStyle.SetHistLineWidth(2)
-import numpy as np
-from scipy import interpolate
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
-import numpy as np
-from scipy.interpolate import RegularGridInterpolator
-def interpolate_bfield(bfield, spacing_original=5.0, spacing_new=2.5):
-    """
-    Interpolates a 3D magnetic field grid to a finer resolution.
-    
-    Parameters:
-    - bfield: 3D list representing the magnetic field values.
-    - spacing_original: Original grid spacing in cm.
-    - spacing_new: New grid spacing in cm.
-    
-    Returns:
-    - bfield_new: Interpolated 3D list of the magnetic field values.
-    """
-    # Convert input list to a NumPy array
-    bfield = np.array(bfield)
-    grid_size = bfield.shape
-    
-    x = np.linspace(0, (grid_size[0] - 1) * spacing_original, grid_size[0])
-    y = np.linspace(0, (grid_size[1] - 1) * spacing_original, grid_size[1])
-    z = np.linspace(0, (grid_size[2] - 1) * spacing_original, grid_size[2])
-    
-    # Define new grid
-    factor = spacing_original / spacing_new
-    x_new = np.linspace(0, (grid_size[0] - 1) * spacing_original, int((grid_size[0] - 1) * factor) + 1)
-    y_new = np.linspace(0, (grid_size[1] - 1) * spacing_original, int((grid_size[1] - 1) * factor) + 1)
-    z_new = np.linspace(0, (grid_size[2] - 1) * spacing_original, int((grid_size[2] - 1) * factor) + 1)
-    
-    # Create interpolator
-    interp = RegularGridInterpolator((x, y, z), bfield)
-    
-    # Generate new grid points
-    X_new, Y_new, Z_new = np.meshgrid(x_new, y_new, z_new, indexing='ij')
-    points_new = np.array([X_new.ravel(), Y_new.ravel(), Z_new.ravel()]).T
-    
-    # Interpolate data
-    bfield_new = interp(points_new).reshape(X_new.shape)
-    
-    # Convert back to a nested list before returning
-    return bfield_new.tolist()
 def get_b_values(path="data/MEP48_field_map.inp"):
     # Read the file
     with open(path, "r") as file:
@@ -118,23 +76,6 @@ def from_line_to_matrix(line, nbin):
     return matrix
 
 
-def rebin_matrix(matrix, bins):
-    new_matrix = []
-    for m in range(0,bins[2]):
-        if m%2==0:#keep z ending with 5
-            new_matrix.append(matrix[m])
-
-    newest_matrix = []
-    for m in range(0,len(new_matrix)):
-        new_line = []
-        for x in range(0,bins[0]):
-            for y in range(0,bins[1]):
-                if y%2==0 and x%2==0:
-                    new_line.append(new_matrix[m][x+y*bins[0]])
-
-        newest_matrix.append(new_line)
-    return newest_matrix
-
 
 """
 
@@ -160,6 +101,12 @@ def rebin_matrix(matrix, bins):
 def extend_formatted_field(
     field, xmin, xmax, ymin, ymax, zmin, zmax, range_x, range_y, range_z, step, bins, zero = False
 ):
+    bins[0] = bins[0] 
+    bins[1] = bins[1] 
+    
+
+    print("field len", len(field))
+    print("field[0] len", len(field[0]))
     # expand in z
     if range_z[0] > zmin:
         nstep = ROOT.TMath.Abs(range_z[0] - zmin) / step
@@ -217,6 +164,9 @@ def extend_formatted_field(
     if not zero:
         field = new_field
 
+    print("field len", len(field))
+    print("field[0] len", len(field[0]))
+
     # expand in x
     nstepmin = 0
     if range_x[0] > xmin:
@@ -227,6 +177,26 @@ def extend_formatted_field(
     if range_x[1] < xmax:
         nstepmax = ROOT.TMath.Abs(range_x[1] - xmax) / step
         range_x[1] = xmax
+
+    """
+    for line in field:
+        index = 0
+        index_break = 0
+        while index_break < bins[1]:
+            index_break += 1
+            for _ in range(0, int(nstepmin)):
+                if zero:
+                    line.insert(int(index), [0,0,0])
+                else:
+                    line.insert(int(index), line[int(index)])
+            index += nstepmin + bins[0]
+            for _ in range(0, int(nstepmax)):
+                if zero:
+                    line.insert(int(index), [0,0,0])
+                else:
+                    line.insert(int(index), line[int(index-1)])
+            index += nstepmax
+    """
 
     for line in field:
         index = 0
@@ -254,68 +224,108 @@ def extend_formatted_field(
     return field, range_x, range_y, range_z, bins
 
 
-def convert_map(magnet="MEP48", zshift=0):
+def convert_map(magnet="MEP48", zshift=0, bin_step=2.5):
     path = "data/" + magnet + "_field_map.inp"
 
-    bins, range_x, range_y, range_z, field = get_b_values(path)
-    binsize = int((range_y[1]-range_y[0])/bins[0]+1)
-    print("bins: ", bins)
-    print("binsize: ", binsize)
+    bins, range_x_old, range_y_old, range_z_old, field = get_b_values(path)
+    print(bins)
+    print(range_x_old, range_y_old, range_z_old)
+    binsize = int((range_y_old[1]-range_y_old[0])/bins[0]+1)
     matrix = from_line_to_matrix(field, 3)
     matrix = from_line_to_matrix(matrix, len(matrix) / bins[2])
-    #matrix = interpolate_bfield(matrix, binsize,2.5)
-    #bins = [int((bins[0]-1)*binsize/2.5+1), int((bins[1]-1)*binsize/2.5+1), int((bins[2]-1)*binsize/2.5+1)]
-    #binsize = 2.5
-    range_z[0] = range_z[0] + zshift
-    range_z[1] = range_z[1] + zshift
 
-    print("bins: ", bins)
-    print("binsize: ", binsize)
+    matrix = np.array(matrix)
+    # matrix[zbin][xbin+ybin*nbinx][0] = bx(x,y,z)
+    # matrix[zbin][xbin+ybin*nbinx][1] = by(x,y,z)
+    # matrix[zbin][xbin+ybin*nbinx][2] = bz(x,y,z)
 
-    matrix, range_x, range_y, range_z, bins = extend_formatted_field(matrix, -300, 300, -300, 300, -155, 1005, range_x, range_y, range_z, binsize, bins)
+    # Fill the new matrix
+    new_matrix = np.zeros((bins[0], bins[1], bins[2], 3))
+    for zbin in range(0,bins[2]):
+        for ybin in range(0,bins[1]):
+            for xbin in range(0,bins[0]):
+                index = xbin + ybin * bins[0]
+                new_matrix[xbin][ybin][zbin][:] = matrix[zbin][index][:]
 
+    zoom_factors = (int(binsize/bin_step), int(binsize/bin_step), int(binsize/bin_step), 1)
+    print("zoom factors", zoom_factors)
+    new_matrix_ext = zoom(new_matrix, zoom=zoom_factors, order=1)  # order=1: linear interpolation
+
+    range_z_old[0] = range_z_old[0] + zshift
+    range_z_old[1] = range_z_old[1] + zshift
+
+    # Define new ranges
+    range_x = [-300.0, 300.0]
+    range_y = [-300.0, 300.0]
+    range_z = [-155.0, 1000.0]
+
+    # Compute new shape
+    x1_bins = int((range_x[1] - range_x[0]) / bin_step) + 1
+    y1_bins = int((range_y[1] - range_y[0]) / bin_step) + 1
+    z1_bins = int((range_z[1] - range_z[0]) / bin_step) + 1
+
+    # Create new extended map filled with zeros
+    extended_map = np.zeros((x1_bins, y1_bins, z1_bins,3))
+
+    # Compute start indices where to insert the original map
+    x_start = int((range_x_old[0] - range_x[0]) / bin_step)
+    y_start = int((range_y_old[0] - range_y[0]) / bin_step)
+    z_start = int((range_z_old[0] - range_z[0]) / bin_step)
+
+    # Insert original map into extended map
+    extended_map[
+        x_start:x_start + bins[0]*zoom_factors[0],
+        y_start:y_start + bins[1]*zoom_factors[1],
+        z_start:z_start + bins[2]*zoom_factors[2]
+    ] = new_matrix_ext
+    print(new_matrix.shape)
+    print(new_matrix_ext.shape)
+    print(extended_map.shape)
+    new_matrix_ext = extended_map
+    
+    #range_x = range_x_old
+    #range_y = range_y_old
+    #range_z = range_z_old
         
-    hFieldxMax = ROOT.TH1D("hFieldxMax", ";#it{z} (cm);|#it{B}_{x}|^{max} (T)", bins[2], range_z[0], range_z[1])
-    hFieldyMax = ROOT.TH1D("hFieldyMax", ";#it{z} (cm);|#it{B}_{y}|^{max} (T)", bins[2], range_z[0], range_z[1])
-    hFieldzMax = ROOT.TH1D("hFieldzMax", ";#it{z} (cm);|#it{B}_{z}|^{max} (T)", bins[2], range_z[0], range_z[1])
+    hFieldxMax = ROOT.TH1D("hFieldxMax", ";#it{z} (cm);|#it{B}_{x}|^{max} (T)",  new_matrix_ext.shape[2], range_z[0], range_z[1])
+    hFieldyMax = ROOT.TH1D("hFieldyMax", ";#it{z} (cm);|#it{B}_{y}|^{max} (T)",  new_matrix_ext.shape[2], range_z[0], range_z[1])
+    hFieldzMax = ROOT.TH1D("hFieldzMax", ";#it{z} (cm);|#it{B}_{z}|^{max} (T)",  new_matrix_ext.shape[2], range_z[0], range_z[1])
     if magnet == "MEP48":
+        hFieldxMax = ROOT.TH1D("hFieldxMax", ";#it{z} (cm);|#it{B}_{x}|^{max} (T)", 20, 0, 50)
+        hFieldyMax = ROOT.TH1D("hFieldyMax", ";#it{z} (cm);|#it{B}_{y}|^{max} (T)", 20, 0, 50)
+        hFieldzMax = ROOT.TH1D("hFieldzMax", ";#it{z} (cm);|#it{B}_{z}|^{max} (T)", 20, 0, 50)
 
-            
-        hFieldxMax = ROOT.TH1D("hFieldxMax", ";#it{z} (cm);|#it{B}_{x}|^{max} (T)", 10, 0, 50)
-        hFieldyMax = ROOT.TH1D("hFieldyMax", ";#it{z} (cm);|#it{B}_{y}|^{max} (T)", 10, 0, 50)
-        hFieldzMax = ROOT.TH1D("hFieldzMax", ";#it{z} (cm);|#it{B}_{z}|^{max} (T)", 10, 0, 50)
+    stepx = bin_step
+    stepy = bin_step
+    stepz = bin_step
+    
 
-    stepx = (range_x[1] - range_x[0] + binsize) / bins[0]
-    stepy = (range_y[1] - range_y[0] + binsize) / bins[1]
-    stepz = (range_z[1] - range_z[0] + binsize) / bins[2]
-
-
-    for iz in range(0, bins[2]):
+    for iz in range(0, new_matrix_ext.shape[2]):
 
         zval = range_z[0] + iz * stepz
         bxvalMax = -1
         byvalMax = -1
         bzvalMax = -1
 
-        for ix in range(0, bins[0]):
+        for ix in range(0, new_matrix_ext.shape[0]):
             xval = range_x[0] + ix * stepx
             if (xval>15 or xval<-15) and magnet == "MEP48":
                 continue
             elif xval>100 or xval<-100:
                 continue
 
-            for iy in range(0, bins[1]):
+            for iy in range(0, new_matrix_ext.shape[1]):
                 yval = range_y[0] + iy * stepy
                 if (yval>15 or yval<-15) and magnet == "MEP48":
                     continue
                 elif yval>100 or yval<-100:
                     continue
-                if ROOT.TMath.Abs(matrix[iz][ix+iy*bins[0]][0]) > bxvalMax:
-                    bxvalMax = ROOT.TMath.Abs(matrix[iz][ix+iy*bins[0]][0])
-                if ROOT.TMath.Abs(matrix[iz][ix+iy*bins[0]][1]) > byvalMax:
-                    byvalMax = ROOT.TMath.Abs(matrix[iz][ix+iy*bins[0]][1])
-                if ROOT.TMath.Abs(matrix[iz][ix+iy*bins[0]][2]) > bzvalMax:
-                    bzvalMax = ROOT.TMath.Abs(matrix[iz][ix+iy*bins[0]][2])
+                if ROOT.TMath.Abs(new_matrix_ext[ix][iy][iz][0]) > bxvalMax:
+                    bxvalMax = ROOT.TMath.Abs(new_matrix_ext[ix][iy][iz][0])
+                if ROOT.TMath.Abs(new_matrix_ext[ix][iy][iz][1]) > byvalMax:
+                    byvalMax = ROOT.TMath.Abs(new_matrix_ext[ix][iy][iz][1])
+                if ROOT.TMath.Abs(new_matrix_ext[ix][iy][iz][2]) > bzvalMax:
+                    bzvalMax = ROOT.TMath.Abs(new_matrix_ext[ix][iy][iz][2])
         hFieldxMax.Fill(zval, bxvalMax)
         hFieldyMax.Fill(zval, byvalMax)
         hFieldzMax.Fill(zval, bzvalMax)
@@ -323,42 +333,26 @@ def convert_map(magnet="MEP48", zshift=0):
     maxRangeX = hFieldxMax.GetMaximum()
     maxRangeY = hFieldyMax.GetMaximum()
     maxRangeZ = hFieldzMax.GetMaximum()
-    
-    if magnet == "MEP48":
 
-        hFieldxMax.GetYaxis().SetRangeUser(0, 0.15)
-        hFieldyMax.GetYaxis().SetRangeUser(0, 1.55)
-        hFieldzMax.GetYaxis().SetRangeUser(0, 0.45)
+    hFieldx = ROOT.TH1D("hFieldx", ";#it{z} (cm);Bx (T)", new_matrix_ext.shape[2], range_z[0], range_z[1])
+    hFieldy = ROOT.TH1D("hFieldy", ";#it{z} (cm);By (T)", new_matrix_ext.shape[2], range_z[0], range_z[1])
+    hFieldz = ROOT.TH1D("hFieldz", ";#it{z} (cm);Bz (T)", new_matrix_ext.shape[2], range_z[0], range_z[1])
 
-        matrix = rebin_matrix(matrix,bins)
-        bins[0] = int((bins[0]-1)/2+1)
-        bins[1] = int((bins[1]-1)/2+1)
-        bins[2] = int((bins[2]-1)/2+1)
-        binsize =  2*binsize
+    hFieldxmin = ROOT.TH1D("hFieldxmin", ";#it{z} (cm);Bx (T)", new_matrix_ext.shape[2], range_z[0], range_z[1])
+    hFieldymin = ROOT.TH1D("hFieldymin", ";#it{z} (cm);By (T)", new_matrix_ext.shape[2], range_z[0], range_z[1])
+    hFieldzmin = ROOT.TH1D("hFieldzmin", ";#it{z} (cm);Bz (T)", new_matrix_ext.shape[2], range_z[0], range_z[1])
 
-    hFieldx = ROOT.TH1D("hFieldx", ";#it{z} (cm);Bx (T)", bins[2], range_z[0], range_z[1])
-    hFieldy = ROOT.TH1D("hFieldy", ";#it{z} (cm);By (T)", bins[2], range_z[0], range_z[1])
-    hFieldz = ROOT.TH1D("hFieldz", ";#it{z} (cm);Bz (T)", bins[2], range_z[0], range_z[1])
+    hFieldxplus = ROOT.TH1D("hFieldxplus", ";#it{z} (cm);Bx (T)", new_matrix_ext.shape[2], range_z[0], range_z[1])
+    hFieldyplus = ROOT.TH1D("hFieldyplus", ";#it{z} (cm);By (T)", new_matrix_ext.shape[2], range_z[0], range_z[1])
+    hFieldzplus = ROOT.TH1D("hFieldzplus", ";#it{z} (cm);Bz (T)", new_matrix_ext.shape[2], range_z[0], range_z[1])
 
-    hFieldx_zoom = ROOT.TH1D("hFieldx_zoom", ";#it{z} (cm);Bx (T)", int(200/binsize), -100, 100)
-    hFieldy_zoom = ROOT.TH1D("hFieldy_zoom", ";#it{z} (cm);By (T)", int(200/binsize), -100, 100)
-    hFieldz_zoom = ROOT.TH1D("hFieldz_zoom", ";#it{z} (cm);Bz (T)", int(200/binsize), -100, 100)
+    hFieldxminplus = ROOT.TH1D("hFieldxminplus", ";#it{z} (cm);Bx (T)", new_matrix_ext.shape[2], range_z[0], range_z[1])
+    hFieldyminplus = ROOT.TH1D("hFieldyminplus", ";#it{z} (cm);By (T)", new_matrix_ext.shape[2], range_z[0], range_z[1])
+    hFieldzminplus = ROOT.TH1D("hFieldzminplus", ";#it{z} (cm);Bz (T)", new_matrix_ext.shape[2], range_z[0], range_z[1])
 
-    hFieldxmin = ROOT.TH1D("hFieldxmin", ";#it{z} (cm);Bx (T)", bins[2], range_z[0], range_z[1])
-    hFieldymin = ROOT.TH1D("hFieldymin", ";#it{z} (cm);By (T)", bins[2], range_z[0], range_z[1])
-    hFieldzmin = ROOT.TH1D("hFieldzmin", ";#it{z} (cm);Bz (T)", bins[2], range_z[0], range_z[1])
-
-    hFieldxplus = ROOT.TH1D("hFieldxplus", ";#it{z} (cm);Bx (T)", bins[2], range_z[0], range_z[1])
-    hFieldyplus = ROOT.TH1D("hFieldyplus", ";#it{z} (cm);By (T)", bins[2], range_z[0], range_z[1])
-    hFieldzplus = ROOT.TH1D("hFieldzplus", ";#it{z} (cm);Bz (T)", bins[2], range_z[0], range_z[1])
-
-    hFieldxminplus = ROOT.TH1D("hFieldxminplus", ";#it{z} (cm);Bx (T)", bins[2], range_z[0], range_z[1])
-    hFieldyminplus = ROOT.TH1D("hFieldyminplus", ";#it{z} (cm);By (T)", bins[2], range_z[0], range_z[1])
-    hFieldzminplus = ROOT.TH1D("hFieldzminplus", ";#it{z} (cm);Bz (T)", bins[2], range_z[0], range_z[1])
-
-    hFieldxplusmin = ROOT.TH1D("hFieldxplusmin", ";#it{z} (cm);Bx (T)", bins[2], range_z[0], range_z[1])
-    hFieldyplusmin = ROOT.TH1D("hFieldyplusmin", ";#it{z} (cm);By (T)", bins[2], range_z[0], range_z[1])
-    hFieldzplusmin = ROOT.TH1D("hFieldzplusmin", ";#it{z} (cm);Bz (T)", bins[2], range_z[0], range_z[1])
+    hFieldxplusmin = ROOT.TH1D("hFieldxplusmin", ";#it{z} (cm);Bx (T)", new_matrix_ext.shape[2], range_z[0], range_z[1])
+    hFieldyplusmin = ROOT.TH1D("hFieldyplusmin", ";#it{z} (cm);By (T)", new_matrix_ext.shape[2], range_z[0], range_z[1])
+    hFieldzplusmin = ROOT.TH1D("hFieldzplusmin", ";#it{z} (cm);Bz (T)", new_matrix_ext.shape[2], range_z[0], range_z[1])
 
     hFieldx.SetLineColor(ROOT.kBlack)
     hFieldy.SetLineColor(ROOT.kBlack)
@@ -379,38 +373,35 @@ def convert_map(magnet="MEP48", zshift=0):
     hFieldzminplus.SetLineColor(ROOT.kGreen + 1)
     hFieldzplusmin.SetLineColor(ROOT.kOrange + 1)
 
-    stepx = (range_x[1] - range_x[0] + binsize) / bins[0]
-    stepy = (range_y[1] - range_y[0] + binsize) / bins[1]
-    stepz = (range_z[1] - range_z[0] + binsize) / bins[2]
+    stepx = bin_step
+    stepy = bin_step
+    stepz = bin_step
 
     file = open(magnet + ".txt", "w")
     plotrange = 10 if magnet == "MEP48" else 70
         
-    for ix in range(0, bins[0]):
+    for ix in range(0, new_matrix_ext.shape[0]):
         xval = range_x[0] + ix * stepx
         #if xval % 10 == 5:
             #continue
-        for iy in range(0, bins[1]):
+        for iy in range(0, new_matrix_ext.shape[1]):
             yval = range_y[0] + iy * stepy
             #if yval % 10 == 5:
                 #continue
-            for iz in range(0, bins[2]):
+            for iz in range(0, new_matrix_ext.shape[2]):
                 zval = range_z[0] + iz * stepz
                 #if zval % 10 == 0:
                     #continue
 
-                bxval = matrix[iz][ix + iy * bins[0]][0]
-                byval = matrix[iz][ix + iy * bins[0]][1]
-                bzval = matrix[iz][ix + iy * bins[0]][2]
+                bxval = new_matrix_ext[ix][iy][iz][0]
+                byval = new_matrix_ext[ix][iy][iz][1]
+                bzval = new_matrix_ext[ix][iy][iz][2]
                 file.write(f"{xval*10} {yval*10} {zval*10} {bxval} {byval} {bzval}\n")
 
                 if yval == 0 and xval == 0 and magnet == "MEP48":
                     hFieldx.Fill(zval, bxval)
                     hFieldy.Fill(zval, byval)
                     hFieldz.Fill(zval, bzval)
-                    hFieldy_zoom.Fill(zval, byval)
-                    hFieldx_zoom.Fill(zval, bxval)
-                    hFieldz_zoom.Fill(zval, bzval)
                 if yval == 40 and xval == 10 and magnet == "MNP33":
                     hFieldx.Fill(zval, bxval)
                     hFieldy.Fill(zval, byval)
@@ -433,15 +424,15 @@ def convert_map(magnet="MEP48", zshift=0):
                     hFieldzplusmin.Fill(zval, bzval)
 
     fileRot = open(magnet + "Rotated.txt", "w")
-    for ix in range(0, bins[0]):
+    for ix in range(0, new_matrix_ext.shape[0]):
         xval = range_x[0] + ix * stepx
-        for iz in range(0, bins[2]):
+        for iz in range(0, new_matrix_ext.shape[2]):
             zval = range_z[0] + iz * stepz
-            for iy in range(bins[1] - 1, -1, -1):
+            for iy in range(new_matrix_ext.shape[1] - 1, -1, -1):
                 yval = range_y[0] + iy * stepy
-                bxval = matrix[iz][ix + iy * bins[0]][0]
-                byval = matrix[iz][ix + iy * bins[0]][1]
-                bzval = matrix[iz][ix + iy * bins[0]][2]
+                bxval = new_matrix_ext[ix][iy][iz][0]
+                byval = new_matrix_ext[ix][iy][iz][1]
+                bzval = new_matrix_ext[ix][iy][iz][2]
                 fileRot.write(
                     f"{xval*10} {zval*10} {-yval*10} {bxval} {bzval} {-byval}\n"
                 )
@@ -626,17 +617,8 @@ def convert_map(magnet="MEP48", zshift=0):
     hFieldy.Draw("hist") 
     cv.cd(3)
     hFieldz.Draw("hist") 
-    
-    cv.SaveAs("figures/" + magnet + "_fieldvsz.png")
 
-    cv.cd(1)
-    hFieldx_zoom.Draw("hist") 
-    cv.cd(2)
-    hFieldy_zoom.Draw("hist") 
-    cv.cd(3)
-    hFieldz_zoom.Draw("hist") 
-    
-    cv.SaveAs("figures/" + magnet + "_fieldvsz_zoom.png")
+    cv.SaveAs("figures/" + magnet + "_fieldvsz.png")
 
     legend = ROOT.TLegend(0.4, 0.7, 0.7, 0.9)
     if magnet == "MEP48":
@@ -681,71 +663,23 @@ def convert_map(magnet="MEP48", zshift=0):
     hFieldzplusmin.Draw("hist same")
     cv.Update()
     cv.SaveAs("figures/" + magnet + "_fieldvsz_all.png")
-    return matrix, range_x, range_y, range_z, bins
-
-def save_map(map,binsize,range_x,range_y,range_z,bins, file_name = "NewBFieldNA60plus_longsetup"):
-    file = open(file_name+".txt", "w")
-
-    stepx = (range_x[1] - range_x[0] + binsize) / bins[0]
-    stepy = (range_y[1] - range_y[0] + binsize) / bins[1]
-    stepz = (range_z[1] - range_z[0] + binsize) / bins[2]
-
-    for iz in range(0, bins[2]):
-        zval = range_z[0] + iz * stepz
-        bxvalMax = ROOT.TMath.Abs(map[iz][0][0])
-        byvalMax = ROOT.TMath.Abs(map[iz][0][1])
-        bzvalMax = ROOT.TMath.Abs(map[iz][0][2])
-        for m in map[iz]:
-            if ROOT.TMath.Abs(m[0]) > bxvalMax:
-                bxvalMax = ROOT.TMath.Abs(m[0])
-            if ROOT.TMath.Abs(m[1]) > byvalMax:
-                byvalMax = ROOT.TMath.Abs(m[1])
-            if ROOT.TMath.Abs(m[2]) > bzvalMax:
-                bzvalMax = ROOT.TMath.Abs(m[2])
-
-    for ix in range(0, bins[0]):
-        xval = range_x[0] + ix * stepx
-        for iy in range(0, bins[1]):
-            yval = range_y[0] + iy * stepy
-            for iz in range(0, bins[2]):
-                zval = range_z[0] + iz * stepz
-
-                bxval = map[iz][ix + iy * bins[0]][0]
-                byval = map[iz][ix + iy * bins[0]][1]
-                bzval = map[iz][ix + iy * bins[0]][2]
-
-                file.write(f"{xval*10} {yval*10} {zval*10} {bxval} {byval} {bzval}\n")
-
-    fileRot = open(file_name+"Rotated.txt", "w")
-    for ix in range(0, bins[0]):
-        xval = range_x[0] + ix * stepx
-        for iz in range(0, bins[2]):
-            zval = range_z[0] + iz * stepz
-            for iy in range(bins[1] - 1, -1, -1):
-                yval = range_y[0] + iy * stepy
-                bxval = map[iz][ix + iy * bins[0]][0]
-                byval = map[iz][ix + iy * bins[0]][1]
-                bzval = map[iz][ix + iy * bins[0]][2]
-                fileRot.write(
-                    f"{xval*10} {zval*10} {-yval*10} {bxval} {bzval} {-byval}\n"
-                )
-
-    file.close()
-    fileRot.close()
+    return new_matrix_ext, range_x, range_y, range_z, [new_matrix_ext.shape[0], new_matrix_ext.shape[1], new_matrix_ext.shape[2]] 
+#
 
 def merge_map(maps,binsize,range_x,range_y,range_z,bins):
     mep48 = maps[0]
     mnp33 = maps[1]
 
     # Initialize the result matrix with zeros
-    matrix = [[[0,0,0] for _ in range(len(mep48[0]))] for _ in range(len(mep48))]
+    matrix = mep48.copy()
 
     # Sum element by element
-    for i in range(len(mep48)):
-        for j in range(len(mep48[0])):
-            matrix[i][j][0] = mep48[i][j][0] + mnp33[i][j][0]
-            matrix[i][j][1] = mep48[i][j][1] + mnp33[i][j][1]
-            matrix[i][j][2] = mep48[i][j][2] + mnp33[i][j][2]
+    for i in range(bins[0]):
+        for j in range(bins[1]):
+            for k in range(bins[2]):
+                matrix[i][j][k][0] = mep48[i][j][k][0] + mnp33[i][j][k][0]
+                matrix[i][j][k][1] = mep48[i][j][k][1] + mnp33[i][j][k][1]
+                matrix[i][j][k][2] = mep48[i][j][k][2] + mnp33[i][j][k][2]
 
     hFieldxMax = ROOT.TH1D("hFieldxMax", ";#it{z} (cm);|#it{B}_{x}|^{max} (T)", bins[2], range_z[0], range_z[1])
     hFieldyMax = ROOT.TH1D("hFieldyMax", ";#it{z} (cm);|#it{B}_{y}|^{max} (T)", bins[2], range_z[0], range_z[1])
@@ -790,19 +724,19 @@ def merge_map(maps,binsize,range_x,range_y,range_z,bins):
     hFieldzminplus.SetLineColor(ROOT.kGreen + 1)
     hFieldzplusmin.SetLineColor(ROOT.kOrange + 1)
 
-    stepx = (range_x[1] - range_x[0] + binsize) / bins[0]
-    stepy = (range_y[1] - range_y[0] + binsize) / bins[1]
-    stepz = (range_z[1] - range_z[0] + binsize) / bins[2]
+    stepx = binsize
+    stepy = binsize
+    stepz = binsize
 
     file = open("NewBFieldNA60plus_longsetup.txt", "w")
     plotrange = 10
 
-
+    """
     for iz in range(0, bins[2]):
         zval = range_z[0] + iz * stepz
-        bxvalMax = ROOT.TMath.Abs(matrix[iz][0][0])
-        byvalMax = ROOT.TMath.Abs(matrix[iz][0][1])
-        bzvalMax = ROOT.TMath.Abs(matrix[iz][0][2])
+        bxvalMax = ROOT.TMath.Abs(matrix[0][0][iz][0])
+        byvalMax = ROOT.TMath.Abs(matrix[0][0][iz][1])
+        bzvalMax = ROOT.TMath.Abs(matrix[0][0][iz][2])
         for m in matrix[iz]:
             if ROOT.TMath.Abs(m[0]) > bxvalMax:
                 bxvalMax = ROOT.TMath.Abs(m[0])
@@ -813,26 +747,19 @@ def merge_map(maps,binsize,range_x,range_y,range_z,bins):
         hFieldxMax.Fill(zval, bxvalMax)
         hFieldyMax.Fill(zval, byvalMax)
         hFieldzMax.Fill(zval, bzvalMax)
-
+    """
+    print("bins", bins)
     for ix in range(0, bins[0]):
         xval = range_x[0] + ix * stepx
-        #if xval % 10 == 5:
-            #continue
         for iy in range(0, bins[1]):
             yval = range_y[0] + iy * stepy
-            #if yval % 10 == 5:
-                #continue
             for iz in range(0, bins[2]):
                 zval = range_z[0] + iz * stepz
-                #if zval % 10 == 0:
-                    #continue
-
-                bxval = matrix[iz][ix + iy * bins[0]][0]
-                byval = matrix[iz][ix + iy * bins[0]][1]
-                bzval = matrix[iz][ix + iy * bins[0]][2]
+                bxval = matrix[ix][iy][iz][0]
+                byval = matrix[ix][iy][iz][1]
+                bzval = matrix[ix][iy][iz][2]
 
                 file.write(f"{xval*10} {yval*10} {zval*10} {bxval} {byval} {bzval}\n")
-
 
                 if yval == 0 and xval == 0:
                     hFieldx.Fill(zval, bxval)
@@ -862,9 +789,9 @@ def merge_map(maps,binsize,range_x,range_y,range_z,bins):
             zval = range_z[0] + iz * stepz
             for iy in range(bins[1] - 1, -1, -1):
                 yval = range_y[0] + iy * stepy
-                bxval = matrix[iz][ix + iy * bins[0]][0]
-                byval = matrix[iz][ix + iy * bins[0]][1]
-                bzval = matrix[iz][ix + iy * bins[0]][2]
+                bxval = matrix[ix][iy][iz][0]
+                byval = matrix[ix][iy][iz][1]
+                bzval = matrix[ix][iy][iz][2]
                 fileRot.write(
                     f"{xval*10} {zval*10} {-yval*10} {bxval} {bzval} {-byval}\n"
                 )
@@ -880,7 +807,7 @@ def merge_map(maps,binsize,range_x,range_y,range_z,bins):
         pad.SetMargin(
             0.2, 0.1, 0.1, 0.1
         )  # Set left, right, bottom, top margins (in fraction of pad)
-
+    """
     cv.cd(1)
     hFieldxMax.Draw("hist") 
     cv.cd(2)
@@ -889,7 +816,7 @@ def merge_map(maps,binsize,range_x,range_y,range_z,bins):
     hFieldzMax.Draw("hist") 
 
     cv.SaveAs("figures/max_fieldvsz.png")
-
+    """
     cv.cd(1)
     hFieldx.Draw("hist") 
     cv.cd(2)
@@ -904,7 +831,7 @@ def merge_map(maps,binsize,range_x,range_y,range_z,bins):
     legend.AddEntry(hFieldxmin, "x = -15 cm, y = -15 cm", "f")
     legend.AddEntry(hFieldxplus, "x = 15 cm, y = 15 cm", "f")
     legend.AddEntry(hFieldxminplus, "x = -15 cm, y = 15 cm", "f")
-    legend.AddEntry(hFieldxplusmin, "x =False cm, y = -15 cm", "f")
+    legend.AddEntry(hFieldxplusmin, "x = 15 cm, y = -15 cm", "f")
     hFieldx.GetYaxis().SetRangeUser(-0.2, 0.2)
     hFieldz.GetYaxis().SetRangeUser(-0.7, 0.7)
 
@@ -930,13 +857,9 @@ def merge_map(maps,binsize,range_x,range_y,range_z,bins):
     return matrix, range_x, range_y, range_z, bins
 
 def main():
-    MNP33_matrix, _, _, _, _ = convert_map("MNP33", 445)
-    MEP48_matrix, MEP48_range_x, MEP48_range_y, MEP48_range_z, MEP48_bins = convert_map("MEP48", 0)
-    print(MEP48_range_x, MEP48_range_y, MEP48_range_z, MEP48_bins)
-
-    merge_map([MEP48_matrix,MNP33_matrix],10,MEP48_range_x, MEP48_range_y, [MEP48_range_z[0],MEP48_range_z[1]], MEP48_bins)
-
-    #save_map(MEP48_matrix,10,MEP48_range_x,MEP48_range_y,MEP48_range_z,MEP48_bins, file_name = "MEP48_zm32.5")
+    MNP33_matrix, _, _, _, _ = convert_map("MNP33", 445, 2.5)
+    MEP48_matrix, MEP48_range_x, MEP48_range_y, MEP48_range_z, MEP48_bins = convert_map("MEP48", 32.5, 2.5)
+    merge_map([MEP48_matrix,MNP33_matrix],2.5,MEP48_range_x, MEP48_range_y, MEP48_range_z, MEP48_bins)
 
 
 if __name__ == "__main__":
