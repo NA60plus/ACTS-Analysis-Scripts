@@ -271,11 +271,11 @@ def runFullChain(
     useFatras=False,
 ):
 
-    field = acts.examples.MagneticFieldMapXyz("bfield/MEP48_z32.5.txt")
-    field_rotated = acts.examples.MagneticFieldMapXyz("bfield/MEP48_z32.5Rotated.txt")
+    #field = acts.examples.MagneticFieldMapXyz("bfield/MEP48.txt")
+    #field_rotated = acts.examples.MagneticFieldMapXyz("bfield/MEP48Rotated.txt")
 
-    # field = acts.examples.MagneticFieldMapXyz("bfield/MEP48.txt")
-    # field_rotated = acts.examples.MagneticFieldMapXyz("bfield/MEP48Rotated.txt")
+    field = acts.examples.MagneticFieldMapXyz("bfield/NewBFieldNA60plus_longsetup.txt")
+    field_rotated = acts.examples.MagneticFieldMapXyz("bfield/NewBFieldNA60plus_longsetupRotated.txt")
 
     rnd = acts.examples.RandomNumbers(seed=44)
 
