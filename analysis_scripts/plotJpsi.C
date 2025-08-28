@@ -15,11 +15,11 @@ gStyle->SetPadLeftMargin(0.15);   // Set left margin
 gStyle->SetPadRightMargin(0.05);  // Set right margin
 gStyle->SetPadTopMargin(0.05);    // Set top margin
 gStyle->SetPadBottomMargin(0.15); // Set bottom margin
-gStyle->SetHistLineWidth(2);
+gStyle->SetHistLineWidth(1);
 gStyle->SetOptTitle(0);   // Show mean (1), RMS (1), but hide entries (0) and title (0)
 //gStyle->SetOptStat(1100); // Show mean (1), RMS (1), but hide entries (0) and title (0)
-gStyle->SetCanvasDefW(1800);  // Set default canvas width to 800 pixels
-gStyle->SetCanvasDefH(1200);  // Set default canvas height to 600 pixels
+//gStyle->SetCanvasDefW(1800);  // Set default canvas width to 800 pixels
+//gStyle->SetCanvasDefH(1200);  // Set default canvas height to 600 pixels
 
 TH1D* ProjectMean(const TH2D* h2, TString suffix, TString xtitle="", TString ytitle="", TString title ="")
 {
@@ -104,13 +104,15 @@ void CheckJPsi(const char *filename = "tracksummary_ambims.root", const char *tr
   // Retrieve the particle from the database
   TParticlePDG *particle = pdgDB->GetParticle(pdgCode);
   double Mdileton = particle->Mass();
-  double deltaM = 0.7;
+  double deltaM = 0.2;
+  if(pdgCode==223)
+    deltaM = 0.7;
 
   std::string rootname = std::string("invmass")+outputname+std::string(".root");
   TFile *fout = new TFile(rootname.c_str(), "recreate");
-  TH1D *he_mass_fit = new TH1D("he_mass_fit", ";M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 150, -deltaM, +deltaM);
-  TH2D *he_mass_fit_vs_pt = new TH2D("he_mass_fit_vs_pt", ";#it{p}_{T} (GeV/#it{c};M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 40,0,3, 150, -deltaM, +deltaM);
-  TH2D *he_mass_fit_vs_y = new TH2D("he_mass_fit_vs_y", ";#it{y};M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 40,1.5,5.5, 150, -deltaM, +deltaM);
+  TH1D *he_mass_fit = new TH1D("he_mass_fit", ";M_{#mu^{+}#mu^{-}} (GeV/#it{c}^{2});dN/dM", 150, Mdileton*(1-deltaM), Mdileton*(1+deltaM));
+  TH2D *he_mass_fit_vs_pt = new TH2D("he_mass_fit_vs_pt", ";#it{p}_{T} (GeV/#it{c};M_{#mu^{+}#mu^{-}} (GeV/#it{c}^{2});dN/dM", 40,0,3, 150, Mdileton*(1-deltaM), Mdileton*(1+deltaM));
+  TH2D *he_mass_fit_vs_y = new TH2D("he_mass_fit_vs_y", ";#it{y};M_{#mu^{+}#mu^{-}} (GeV/#it{c}^{2});dN/dM", 40,1.5,5.5, 150, Mdileton*(1-deltaM), Mdileton*(1+deltaM));
 
   float ptMin = 0;
   float ptMax = 3;
@@ -312,10 +314,10 @@ void CheckJPsi(const char *filename = "tracksummary_ambims.root", const char *tr
         e_muon2_fit.SetPxPyPzE(px2, py2, pz2, E2);
 
         double e_invariant_mass_fit = (e_muon1_fit + e_muon2_fit).M();
-        he_mass_fit->Fill(e_invariant_mass_fit-Mdileton);
+        he_mass_fit->Fill(e_invariant_mass_fit);
         std::cout<<e_invariant_mass_fit<<std::endl;
-        he_mass_fit_vs_y->Fill((e_muon1_fit + e_muon2_fit).Rapidity(), e_invariant_mass_fit-Mdileton);
-        he_mass_fit_vs_pt->Fill((e_muon1_fit + e_muon2_fit).Pt(), e_invariant_mass_fit-Mdileton);
+        he_mass_fit_vs_y->Fill((e_muon1_fit + e_muon2_fit).Rapidity(), e_invariant_mass_fit);
+        he_mass_fit_vs_pt->Fill((e_muon1_fit + e_muon2_fit).Pt(), e_invariant_mass_fit);
       }
     }
   }
@@ -340,7 +342,7 @@ void CheckJPsi(const char *filename = "tracksummary_ambims.root", const char *tr
   gStyle->SetPadRightMargin(0.05);  // Set right margin
   gStyle->SetPadTopMargin(0.05);    // Set top margin
   gStyle->SetPadBottomMargin(0.15); // Set bottom margin
-  gStyle->SetHistLineWidth(2);
+  gStyle->SetHistLineWidth(1);
   gStyle->SetOptTitle(0);   // Show mean (1), RMS (1), but hide entries (0) and title (0)
   //gStyle->SetOptStat(0); // Show mean (1), RMS (1), but hide entries (0) and title (0)
 
@@ -348,13 +350,13 @@ void CheckJPsi(const char *filename = "tracksummary_ambims.root", const char *tr
   he_mass_fit->SetMarkerColor(8);
   he_mass_fit->SetMarkerStyle(20);
   he_mass_fit->SetMarkerSize(2);
-  he_mass_fit->SetLineWidth(2);
+  he_mass_fit->SetLineWidth(1);
 //  he_mass_fit->Fit("gaus", "", "", 3, 3.3);
   //he_mass_fit->Fit("gaus","","MR",Mdileton-0.1,Mdileton+0.1);//, "", "", 2.9, 3.3);
   //TF1 *fitFunction = he_mass_fit->GetFunction("gaus");
-  //fitFunction->SetLineWidth(2);
+  //fitFunction->SetLineWidth(1);
   //fitFunction->SetNpx(1000);
-  he_mass_fit->Draw("EP");
+  he_mass_fit->Draw("P");
 
   fout->cd();
   he_mass_fit->Write();
@@ -664,72 +666,108 @@ void plotJpsi()
   gStyle->SetPadRightMargin(0.05);  // Set right margin
   gStyle->SetPadTopMargin(0.05);    // Set top margin
   gStyle->SetPadBottomMargin(0.15); // Set bottom margin
-  gStyle->SetHistLineWidth(2);
+  gStyle->SetHistLineWidth(1);
   gStyle->SetOptTitle(0);   // Show mean (1), RMS (1), but hide entries (0) and title (0)
   //gStyle->SetOptStat(1100); // Show mean (1), RMS (1), but hide entries (0) and title (0)
+  gROOT->SetBatch(kTRUE);
+  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_40GeV_Sec_jpsi_muons/tracksummary_ambi.root", "tracksummary", "jpsiVT",443);
+  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_40GeV_Sec_jpsi_muons/tracksummary_ambims.root", "tracksummary", "jpsiMS",443);
+  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_40GeV_Sec_omega2Body_muons/tracksummary_ambi.root", "tracksummary", "omegatVT",223);
+  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_40GeV_Sec_omega2Body_muons/tracksummary_ambims.root", "tracksummary", "omegatMS",223);
+  
+  TFile *foutOmegaMS = new TFile("invmassomegatMS.root", "read");
+  TH1D *omegaMS = (TH1D*)foutOmegaMS->Get("he_mass_fit");
+  TFile *foutOmegaVT = new TFile("invmassomegatVT.root", "read");
+  TH1D *omegaVT = (TH1D*)foutOmegaVT->Get("he_mass_fit");
 
-  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_40GeV_newSeeding_standardSeeding_deadZones_maxSeedSpMPrim1_maxSeedSpMSec20_ImpMax1_dZMax50_branch1_noGuessing_z0_realTarget_beam0.5_muons_twosteps_rej0.114_perigeeZ400_suffix/tracksummary_ambi.root", "tracksummary", "jpsiMassVT_ambi.png");
-  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_40GeV_newSeeding_standardSeeding_deadZones_maxSeedSpMPrim1_maxSeedSpMSec20_ImpMax1_dZMax50_branch1_noGuessing_z0_realTarget_beam0.5_muons_twosteps_rej0.114_perigeeZ400_suffix/tracksummary_ambill.root", "tracksummary", "jpsiMassVT_ambill.png");
-  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_40GeV_newSeeding_standardSeeding_deadZones_maxSeedSpMPrim1_maxSeedSpMSec20_ImpMax1_dZMax50_branch1_noGuessing_z0_realTarget_beam0.5_muons_twosteps_rej0.114_perigeeZ400_suffix/tracksummary_ambillll.root", "tracksummary", "jpsiMassVT_ambillll.png");
-  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_40GeV_newSeeding_standardSeeding_deadZones_maxSeedSpMPrim1_maxSeedSpMSec20_ImpMax1_dZMax50_branch1_noGuessing_z0_realTarget_beam0.5_muons_twosteps_rej0.114_perigeeZ400_suffix/tracksummary_ambillllll.root", "tracksummary", "jpsiMassVT_ambillllll.png");
-  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_40GeV_newSeeding_standardSeeding_deadZones_maxSeedSpMPrim1_maxSeedSpMSec20_ImpMax1_dZMax50_branch1_noGuessing_z0_realTarget_beam0.5_muons_twosteps_rej0.114_perigeeZ400_suffix/tracksummary_merged.root", "tracksummary", "jpsiMassVT.png");
-  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_40GeV_newSeeding_standardSeeding_deadZones_maxSeedSpMPrim1_maxSeedSpMSec20_ImpMax1_dZMax50_branch1_noGuessing_z0_realTarget_beam0.5_muons_twosteps_rej0.114_perigeeZ400_suffix/tracksummary_ambims.root", "tracksummary", "jpsiMassMS.png");
-  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_40GeV_newSeeding_standardSeeding_maxSeedSpMPrim1_maxSeedSpMSec20_ImpMax1_dZMax50_branch1_noGuessing_z0_realTarget_beam0.5_muons_omega_jpsi_omega2Body_twosteps_rej0.114_perigeeZ400_seeddef_suffix/tracksummary_ambims.root", "tracksummary", "omega.png");
-  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_jpsi/tracksummary_ambims.root", "tracksummary", "jpsiMS");
-  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_jpsi/tracksummary_ambi.root", "tracksummary", "jpsiVT");
-  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_omega2Body/tracksummary_ambims.root", "tracksummary", "omegareMS");
-  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_omega2Body/tracksummary_ambi.root", "tracksummary", "omegareVT");
-  CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_omega2Body/tracksummary_matched.root", "tracksummary", "omegaMat",223);
-  CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_omega2Body/tracksummary_ambi.root", "tracksummary", "omegaMatVT",223);
-  CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_omega2Body/tracksummary_matchedMS.root", "tracksummary", "omegaMatMS",223);
-  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output__omega2Body/tracksummary_ambims.root", "tracksummary", "omegaMSWabs");
-  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_omega2Body/tracksummary_ambi.root", "tracksummary", "omegaVTWabs");
-  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_40GeV_newSeeding_standardSeeding_maxSeedSpMPrim1_maxSeedSpMSec20_ImpMax1_dZMax50_branch1_noGuessing_z0_realTarget_beam0.5_muons_omega_jpsi_twosteps_rej0.114_perigeeZ400_noSeeddef_suffix/tracksummary_ambims.root", "tracksummary", "jpsi.png");
-  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_40GeV_newSeeding_standardSeeding_maxSeedSpMPrim1_maxSeedSpMSec20_ImpMax1_dZMax50_branch1_noGuessing_z0_realTarget_beam0.5_muons_omega_jpsi_omega2Body_twosteps_rej0.114_perigeeZ400_noSeeddef_suffix/tracksummary_ambi.root", "tracksummary", "omegaVT.png");
-  //CheckJPsi("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_40GeV_newSeeding_standardSeeding_maxSeedSpMPrim1_maxSeedSpMSec20_ImpMax1_dZMax50_branch1_noGuessing_z0_realTarget_beam0.5_muons_omega_jpsi_twosteps_rej0.114_perigeeZ400_noSeeddef_suffix/tracksummary_ambi.root", "tracksummary", "jpsiVT.png");
-  /*
+  TFile *foutjpsiMS = new TFile("invmassjpsiMS.root", "read");
+  TH1D *jpsiMS = (TH1D*)foutjpsiMS->Get("he_mass_fit");
+  TFile *foutjpsiVT = new TFile("invmassjpsiVT.root", "read");
+  TH1D *jpsiVT = (TH1D*)foutjpsiVT->Get("he_mass_fit");
 
-  gStyle->SetOptStat(0); // Show mean (1), RMS (1), but hide entries (0) and title (0)
-  std::string rootnameFit = std::string("invmassomegarefitWabs.root");
-  TFile *foutFit = new TFile(rootnameFit.c_str(), "read");
-  std::string rootnameVT = std::string("invmassomegaVTWabs.root");
-  TFile *foutVT = new TFile(rootnameVT.c_str(), "read");
-  std::string rootnameMS = std::string("invmassomegaMSWabs.root");
-  TFile *foutMS = new TFile(rootnameMS.c_str(), "read");
+  // Create your own Gaussian functions to ensure they exist
+  TF1* gausVT = new TF1("gausVT", "gaus", 3, 3.3);  // Adjust range as needed
+  TF1* gausMS = new TF1("gausMS", "gaus", 3, 3.3);
+  gStyle->SetOptStat(0);
+  // Fit without drawing
+  jpsiVT->Fit(gausVT, "RNQ");  // N = no draw, Q = quiet
+  jpsiMS->Fit(gausMS, "RNQ");
 
-  TH1D* hMassFit = (TH1D*) foutFit->Get("he_mass_fit");
-  TH1D* hMassVT = (TH1D*) foutVT->Get("he_mass_fit");
-  TH1D* hMassMS = (TH1D*) foutMS->Get("he_mass_fit");
-  double sigmaMFit = 1000*hMassFit->GetFunction("gaus")->GetParameter(2);
-  double sigmaMVT = 1000*hMassVT->GetFunction("gaus")->GetParameter(2);
-  double sigmaMMS= 1000*hMassMS->GetFunction("gaus")->GetParameter(2);
+  TCanvas *c1 = new TCanvas("c1", "Inv mass");
+  jpsiVT->SetMarkerColor(kBlue);
+  jpsiVT->SetLineColor(kBlue);
+  jpsiVT->SetMarkerStyle(20);
+  jpsiVT->SetMarkerSize(0.7);
+  jpsiMS->SetMarkerColor(kRed);
+  jpsiMS->SetLineColor(kRed);
+  jpsiMS->SetMarkerStyle(21);
+  jpsiMS->SetMarkerSize(0.7);
+  jpsiVT->SetLineWidth(1);
+  jpsiMS->SetLineWidth(1);
 
-  hMassFit->GetListOfFunctions()->Clear();
-  hMassVT->GetListOfFunctions()->Clear();
-  hMassMS->GetListOfFunctions()->Clear();
+  jpsiMS->Scale(jpsiVT->Integral() / jpsiMS->Integral());
+  jpsiVT->Draw("EP");
+  jpsiMS->Draw("EP same");
+  jpsiVT->Draw("HIST SAME ");
+  jpsiMS->Draw("HIST same");
 
-
-
-  hMassFit->SetMarkerStyle(1);
-  hMassVT->SetMarkerStyle(1);
-  hMassMS->SetMarkerStyle(1);
-
-  hMassFit->SetLineColor(kRed);
-  hMassVT->SetLineColor(kBlue);
-  hMassMS->SetLineColor(kGreen);
-
-  TCanvas cv("cv","cv",1920,1280);
-  hMassFit->Draw();
-  hMassVT->Draw("same");
-  hMassMS->Draw("same");
-
-  TLegend legend(0.65,0.65,0.9,0.9);
-  legend.AddEntry(hMassFit, Form("VT+MS refit #sigma_{M} = %.1f MeV", sigmaMFit), "lep");
-  legend.AddEntry(hMassVT,  Form("VT only #sigma_{M} = %.1f MeV", sigmaMVT), "lep");
-  legend.AddEntry(hMassMS,  Form("MS only #sigma_{M} = %.1f MeV", sigmaMMS), "lep");
+  // Dummy clones for legend with larger markers
+  TH1D* jpsiVT_legend = (TH1D*)jpsiVT->Clone("jpsiVT_legend");
+  TH1D* jpsiMS_legend = (TH1D*)jpsiMS->Clone("jpsiMS_legend");
+  jpsiVT_legend->SetMarkerSize(1);  // larger marker for legend only
+  jpsiMS_legend->SetMarkerSize(1);
+  TLegend legend(0.55, 0.55, 0.9, 0.9);
+  legend.SetTextSize(0.043);
+  legend.SetBorderSize(0);
+  legend.SetFillStyle(0);
+  legend.SetHeader("J/#psi#rightarrow#mu^{+}#mu^{-}", "C");  // "C" centers the title
+  legend.AddEntry(jpsiVT_legend, Form("VS+MS #sigma_{M} = %.0f MeV/#it{c}^{2}", 1000 * gausVT->GetParameter(2)), "p");
+  legend.AddEntry(jpsiMS_legend, Form("MS #sigma_{M} = %.0f MeV/#it{c}^{2}", 1000 * gausMS->GetParameter(2)), "p");
   legend.Draw();
-  cv.SaveAs("omegaComparisonWabs.png");
 
-  */
+  c1->SaveAs("ACTS_InvMass_jpsi.png");
+  c1->SaveAs("ACTS_InvMass_jpsi.pdf");
+
+  // Create your own Gaussian functions to ensure they exist
+  TF1* gausVTo = new TF1("gausVTo", "gaus", 0.6, 1);  // Adjust range as needed
+  TF1* gausMSo = new TF1("gausMSo", "gaus", 0.6, 1);
+
+  // Fit without drawing
+  omegaVT->Fit(gausVTo, "RNQ");  // N = no draw, Q = quiet
+  omegaMS->Fit(gausMSo, "RNQ");
+
+  omegaVT->SetMarkerColor(kBlue);
+  omegaVT->SetLineColor(kBlue);
+  omegaVT->SetLineWidth(1);
+  omegaVT->SetMarkerStyle(20);
+  omegaVT->SetMarkerSize(0.7);
+  omegaMS->SetMarkerColor(kRed);
+  omegaMS->SetLineColor(kRed);
+  omegaMS->SetMarkerStyle(21);
+  omegaMS->SetMarkerSize(0.7);
+  omegaMS->SetLineWidth(1);
+
+  // Dummy clones for legend with larger markers
+  TH1D* omegaVT_legend = (TH1D*)omegaVT->Clone("omegaVT_legend");
+  TH1D* omegaMS_legend = (TH1D*)omegaMS->Clone("omegaMS_legend");
+  omegaVT_legend->SetMarkerSize(1);  // larger marker for legend only
+  omegaMS_legend->SetMarkerSize(1);
+
+  omegaMS->Scale(omegaVT->Integral() / omegaMS->Integral());
+  omegaVT->GetXaxis()->SetRangeUser(0.4, 1.2);
+  omegaVT->Draw("EP");
+  omegaVT->Draw("HIST SAME");
+  omegaMS->Draw("EP same");
+  omegaMS->Draw("HIST same");
+  TLegend legendOmega(0.55, 0.55, 0.9, 0.9);
+  legendOmega.SetTextSize(0.045);
+  legendOmega.SetBorderSize(0);
+  legendOmega.SetFillStyle(0);
+  legendOmega.SetHeader("#omega#rightarrow#mu^{+}#mu^{-}", "C");  // "C" centers the title
+  legendOmega.AddEntry(omegaVT_legend, Form("VS+MS #sigma_{M} = %.0f MeV/#it{c}^{2}", 1000 * gausVTo->GetParameter(2)), "p");
+  legendOmega.AddEntry(omegaMS_legend, Form("MS #sigma_{M} = %.0f MeV/#it{c}^{2}", 1000 * gausMSo->GetParameter(2)), "p");
+  legendOmega.Draw();
+  c1->SaveAs("ACTS_InvMass_omega.png");
+  c1->SaveAs("ACTS_InvMass_omega.pdf");
 
 }

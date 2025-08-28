@@ -49,7 +49,12 @@ def merge_efficiencies(path_list,suffix,name):
         canvas.SaveAs(name+"eff_step"+str(len(eff_list))+suffix+".png")
         if len(eff_list)==1:
             passed_sum = eff.GetPassedHistogram()
+            
             total = eff.GetTotalHistogram()
+
+            #passed_sum.GetXaxis().SetRangeUser(0,2.5)
+            #total.GetXaxis().SetRangeUser(0,2.5)
+
             passed_sum2 = copy.copy(eff.GetPassedHistogram())
             passed_sum2.Divide(total)
 
@@ -60,9 +65,13 @@ def merge_efficiencies(path_list,suffix,name):
             print(passed_sum)
             print(total)
         else:
-            passed_sum.Add(eff.GetPassedHistogram())
-            
             passed_sum2 = copy.copy(eff.GetPassedHistogram())
+            #passed_sum2.GetXaxis().SetRangeUser(0,2.5)
+
+            passed_sum.Add(passed_sum2)
+            
+            #passed_sum2 = copy.copy(eff.GetPassedHistogram())
+
 
             passed_sum2.SetFillColor(color[index])
             passed_sum2.SetMarkerStyle(21)
@@ -93,30 +102,16 @@ var_list = ["pT"]
 
 
 files = [
-        "output_40GeV_newSeeding_standardSeeding_deadZones_maxSeedSpMPrim1_maxSeedSpMSec20_ImpMax1_dZMax50_branch1_realTarget_beam0.5_twosteps_rej0.114_perigeeZ400_suffix",
-        "output_40GeV_newSeeding_standardSeeding_noSecondary_deadZones_maxSeedSpMPrim1_maxSeedSpMSec20_ImpMax1_dZMax50_branch1_realTarget_beam0.5_twosteps_rej0.114_perigeeZ400_suffix",
-        "output_40GeV_newSeeding_standardSeeding_noPrimary_deadZones_maxSeedSpMPrim1_maxSeedSpMSec20_ImpMax1_dZMax50_branch1_realTarget_beam0.5_twosteps_rej0.114_perigeeZ400_suffix"]
+        "output_40GeV_Sec_jpsi",
+        "output_40GeV_Sec_jpsi_primaryOnly",
+        "output_40GeV_Sec_jpsi_secondaryOnly"]
 names = [
         "all",
-        "noSecondary",
-        "noPrimary"]
+        "primaryOnly",
+        "secondaryOnly"]
 
 for name,file in zip(names, files):
     for var in var_list:
-        """
-        merge_efficiencies(["/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/"+file+"/performance_seeding.root",
-                            "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/"+file+"/performance_seedingll.root",
-                            "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/"+file+"/performance_seedingllll.root",
-                            "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/"+file+"/performance_seedingllllll.root"],
-                            var,
-                            name+"_seed_")
-        merge_efficiencies(["/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/"+file+"/performance_ckf.root",
-                            "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/"+file+"/performance_llckf.root",
-                            "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/"+file+"/performance_llllckf.root",
-                            "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/"+file+"/performance_llllllckf.root"],
-                            var,
-                            name+"_ckf_")
-        """
         merge_efficiencies(["/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/"+file+"/performance_ambi.root",
                             "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/"+file+"/performance_ambill.root",
                             "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/"+file+"/performance_ambillll.root",

@@ -4,7 +4,7 @@
 
 int readHits() {
     // Open the ROOT file
-    TFile *file = TFile::Open("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_rubenxprino/hits.root", "READ");
+    TFile *file = TFile::Open("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/test_geometry_output/hits.root", "READ");
     if (!file || file->IsZombie()) {
         std::cerr << "Error: Cannot open ROOT file!" << std::endl;
         return 1;

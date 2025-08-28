@@ -37,24 +37,7 @@ def compute_resolution(outputfile, th2_res, th1_res,label, kres, norm=False):
         
     outputfile.cd()
 
-
-def isPrimary(particleId, particleIdlist):
-    for i in range(len(particleIdlist)):
-        if particleId == particleIdlist[i]:
-            return True
-    return False
-
-import pandas as pd
-
-def read_csv_file(file_path):
-    df = pd.read_csv(file_path)
-    return df["particle_id"].tolist()
-
-
-def getResolutions(file_path = "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_rubenxprino_40GeV_omega_carbon_filtered_ruben/tracksummary_ambi.root",
-                   csv_path = "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/event_generation/simulatedEvents/rubenxprino_40GeV_omega_carbon",
-                   output="histogram.root",
-                   directory="Resolutions"):
+def getResolutions(file_path = "output_standardSeeding_iterativeVertexing/tracksummary_ambi.root", output="histogram.root",directory="Resolutions"):
     tree_name = "tracksummary"
 
     # Open the ROOT file and get the TTree
@@ -78,7 +61,6 @@ def getResolutions(file_path = "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scrip
     z0_fit_tree = tree["eLOC1_fit"]
     hit_tree = tree["nMajorityHits"]
     meas_tree = tree["nMeasurements"]
-    pid_tree = tree["majorityParticleId"]
     chi2_tree = tree["chi2Sum"]
     ndf_tree = tree["NDF"]
 
@@ -98,7 +80,6 @@ def getResolutions(file_path = "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scrip
     ndf_data = ndf_tree.array(library="np")
     chi2_data = chi2_tree.array(library="np")
     meas_data = meas_tree.array(library="np")
-    pid_data = pid_tree.array(library="np")
 
     hitsVschi2 = ROOT.TH2F("hitsVschi2", "nMajorityHits;#chi^2/NDOF;entries",1000, 0, 15, 6, -0.5,5.5)
 
@@ -129,14 +110,14 @@ def getResolutions(file_path = "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scrip
     res_1overp_vs_p_pure5 = ROOT.TH2F("res_1overp_vs_p_pure5", "residuals p;p (GeV/c);p_{rec}-p_{gen} (GeV/c);entries",100, 0, 10, 800, -0.5, 0.5)
 
     sigma_ptoverpt_vs_pt = ROOT.TH1F("sigma_ptoverpt_vs_pt", ";#it{p}_{T};#sigma_{#it{p}_{T}}/#it{p}_{T} (GeV/c);entries",30,0,3)
-    sigma_poverp_vs_p = ROOT.TH1F("sigma_poverp_vs_p", ";#it{p} (GeV/c);#sigma_{#it{p}}/#it{p};entries",50,0,10)
+    sigma_poverp_vs_p = ROOT.TH1F("sigma_poverp_vs_p", ";#it{p} (GeV/c);#sigma_{#it{p}}/#it{p};entries",100,0,20)
 
     sigma_pt_vs_pt = ROOT.TH1F("sigma_pt_vs_pt", ";#it{p}_{T} (GeV/c);#sigma_{#it{p}_{T}} (MeV/c);entries",30,0,3)
-    sigma_p_vs_p = ROOT.TH1F("sigma_p_vs_p", ";#it{p} (GeV/c);#sigma_{#it{p}} (MeV/c);entries",50,0,10)
+    sigma_p_vs_p = ROOT.TH1F("sigma_p_vs_p", ";#it{p} (GeV/c);#sigma_{#it{p}} (MeV/c);entries",100,0,20)
 
-    res_d0_vs_p = ROOT.TH2F("res_d0_vs_p", "residuals d_{0};p (GeV/c);d_{0 rec}-d_{0 gen} (mm);entries",50,0,10,100,-1,1)
+    res_d0_vs_p = ROOT.TH2F("res_d0_vs_p", "residuals d_{0};p (GeV/c);d_{0 rec}-d_{0 gen} (mm);entries",30,0,3,-0.3,0.3)
 
-    res_d0_vs_pt = ROOT.TH2F("res_d0_vs_pt", "residuals d_{0};p_{T} (GeV/c);d_{0 rec}-d_{0 gen} (mm);entries",30,0,3,100,-1,1)
+    res_d0_vs_pt = ROOT.TH2F("res_d0_vs_pt", "residuals d_{0};p_{T} (GeV/c);d_{0 rec}-d_{0 gen} (mm);entries",30,0,3,100,-0.3,0.3)
     res_d0_vs_pt_pure_4 = ROOT.TH2F("res_d0_vs_pt_pure_4", "residuals d_{0};p_{T} (GeV/c);d_{0 rec}-d_{0 gen} (mm);entries",30,0,3, 1000, -1,1)
     res_d0_vs_pt_pure_5 = ROOT.TH2F("res_d0_vs_pt_pure_5", "residuals d_{0};p_{T} (GeV/c);d_{0 rec}-d_{0 gen} (mm);entries",30,0,3, 1000, -1,1)
     res_d0_vs_pt_fake_5_4 = ROOT.TH2F("res_d0_vs_pt_fake_5_4", "residuals d_{0};p_{T} (GeV/c);d_{0 rec}-d_{0 gen} (mm);entries",30,0,3, 1000, -1,1)
@@ -144,11 +125,11 @@ def getResolutions(file_path = "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scrip
     res_d0_vs_pt_fake_4_3 = ROOT.TH2F("res_d0_vs_pt_fake_4_3", "residuals d_{0};p_{T} (GeV/c);d_{0 rec}-d_{0 gen} (mm);entries",30,0,3, 1000, -1,1)
     res_d0_vs_pt_fake_4_2 = ROOT.TH2F("res_d0_vs_pt_fake_4_2", "residuals d_{0};p_{T} (GeV/c);d_{0 rec}-d_{0 gen} (mm);entries",30,0,3, 1000, -1,1)
 
-    res_z0_vs_p = ROOT.TH2F("res_z0_vs_p", "residuals z_{0};p (GeV/c);z_{0 rec}-z_{0 gen} (mm);entries",50,0,10, 100, -5,5)
+    res_z0_vs_p = ROOT.TH2F("res_z0_vs_p", "residuals z_{0};p (GeV/c);z_{0 rec}-z_{0 gen} (mm);entries",100,0,20, 100, -5,5)
     res_z0_vs_pt = ROOT.TH2F("res_z0_vs_pt", "residuals z_{0};p_{T} (GeV/c);z_{0 rec}-z_{0 gen} (mm);entries",30,0,3, 100, -5,5)
-    sigma_d0_vs_p = ROOT.TH1F("sigma_d0_vs_p", ";p (GeV/c);#sigma_{d_{0}} (#mum);entries",50,0,10,)
+    sigma_d0_vs_p = ROOT.TH1F("sigma_d0_vs_p", ";p (GeV/c);#sigma_{d_{0}} (#mum);entries",100,0,20,)
     sigma_d0_vs_pt = ROOT.TH1F("sigma_d0_vs_pt", ";p_{T} (GeV/c);#sigma_{d_{0}} (#mum);entries",30,0,3,)
-    sigma_z0_vs_p = ROOT.TH1F("sigma_z0_vs_p", ";p (GeV/c);#sigma_{z_{0}} (#mum);entries",50,0,10)
+    sigma_z0_vs_p = ROOT.TH1F("sigma_z0_vs_p", ";p (GeV/c);#sigma_{z_{0}} (#mum);entries",100,0,20)
     sigma_z0_vs_pt = ROOT.TH1F("sigma_z0_vs_pt", ";p_{T} (GeV/c);#sigma_{z_{0}} (#mum);entries",30,0,3)
 
     fractionMajority = ROOT.TH1F("fractionMajority", "Fraction of hits;fraction of majority hits;entries (%)", 5, 0.1,1.1)
@@ -172,27 +153,12 @@ def getResolutions(file_path = "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scrip
         print(f"Directory '{directory}' created successfully.")
     else:
         print(f"Directory '{directory}' already exists.")
-    out = 0
-    cv = ROOT.TCanvas("cv","cv",1600,1200)
-    for px_ev,py_ev,pz_ev,p_ev,qop_ev,theta_ev,phi_ev,hit_ev,d0_ev,z0_ev,d0_fit_ev,z0_fit_ev,chi2_ev,ndf_ev,meas_ev,pid_ev in zip(px_data,py_data,pz_data,p_data,qop_data,theta_data,phi_data,hit_data,d0_data,z0_data,d0_fit_data,z0_fit_data,chi2_data,ndf_data,meas_data,pid_data):
-        if nev < 10:
-            csv_path_tmp = csv_path + "/event00000000"+str(nev)+"-primaries.csv"
-        elif nev < 100:
-            csv_path_tmp = csv_path + "/event0000000"+str(nev)+"-primaries.csv"
-        elif nev < 1000:
-            csv_path_tmp = csv_path + "/event000000"+str(nev)+"-primaries.csv"
-        else:
-            csv_path_tmp = csv_path + "/event00000"+str(nev)+"-primaries.csv"
 
-        particle_id_list = read_csv_file(csv_path_tmp)
+    cv = ROOT.TCanvas("cv","cv",1600,1200)
+    for px_ev,py_ev,pz_ev,p_ev,qop_ev,theta_ev,phi_ev,hit_ev,d0_ev,z0_ev,d0_fit_ev,z0_fit_ev,chi2_ev,ndf_ev,meas_ev in zip(px_data,py_data,pz_data,p_data,qop_data,theta_data,phi_data,hit_data,d0_data,z0_data,d0_fit_data,z0_fit_data,chi2_data,ndf_data,meas_data):
         nev += 1
 
-        for px,py,pz,p,qop,theta,phi,hit,z0,d0,d0_fit,z0_fit,chi2,ndf,meas,pid in zip(px_ev,py_ev,pz_ev,p_ev,qop_ev,theta_ev,phi_ev,hit_ev,d0_ev,z0_ev,d0_fit_ev,z0_fit_ev,chi2_ev,ndf_ev,meas_ev,pid_ev):
-            if not isPrimary(pid, particle_id_list):
-                out +=1
-                print("out: ",out)
-                
-                continue
+        for px,py,pz,p,qop,theta,phi,hit,z0,d0,d0_fit,z0_fit,chi2,ndf,meas in zip(px_ev,py_ev,pz_ev,p_ev,qop_ev,theta_ev,phi_ev,hit_ev,d0_ev,z0_ev,d0_fit_ev,z0_fit_ev,chi2_ev,ndf_ev,meas_ev):
             if hit >=0:
                 r = abs(1./qop)
                 hitsVschi2.Fill(chi2/ndf, hit)
@@ -207,7 +173,7 @@ def getResolutions(file_path = "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scrip
                 if hit == 5:
                     chi2ndof5.Fill(chi2/ndf)
 
-                fractionMajority.Fill(hit/meas if meas != 0 else 0)
+                fractionMajority.Fill(hit/meas)
                 px_fit = r*math.sin(theta)*math.cos(phi)
                 py_fit = r*math.sin(theta)*math.sin(phi)
                 pz_fit = r*math.cos(theta)
@@ -266,7 +232,7 @@ def getResolutions(file_path = "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scrip
                 res_dpx_vs_dpy.Fill(px-px_fit,py-py_fit)
 
     chi2ndof.Write()
-    fractionMajority.Scale(1./fractionMajority.GetEntries()*100. if fractionMajority.GetEntries() != 0 else 0)
+    fractionMajority.Scale(1./fractionMajority.GetEntries()*100.)
     fractionMajority.Write()
     res_px.Write()
     res_py.Write()
@@ -628,30 +594,13 @@ def getD0Mass(file_path = "output_truthEstimated_truthVertexing/tracksummary_ckf
 
 
 directory_list = [
-                #"/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_rubenxprino_40GeV_omega_primaries_ruben/",
-                #"/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_rubenxprino_40GeV_omega_carbon_primaries_ruben/",
-                #"/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_rubenxprino_40GeV_omega_airtargets_primaries_ruben/",
-
-                "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_rubenxprino_40GeV_omega_newcarbon_filtered_ruben/",
-                #"/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_rubenxprino_40GeV_omega_dip0_nocross_filtered_ruben/",
-                #"/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_geoRubenNoPbNoCross_primaries_ruben/",
-                #"/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_geoRubenNoPbNoCNoCross_filtered_ruben/"
+                "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_events_40GeV/",
 
                 ]
 suffix_list = [
-                #"test",
-                #"NoPbNoCross_primaries",
-                #"Std_Fatras",
-                "geoRubenNoCrossNoCarbonNew",
-                "Carbon_NoCross",
-                #"AirTargets_Fatras",
-                "NoCross",
-                "NoNoPbNoCNoCross"
+                "truth",
                 ]
 
 for directory, suffix in zip(directory_list, suffix_list):
     getResolutions(file_path = directory+"tracksummary_ambi.root", output="histogram"+suffix+".root",directory="Resolutions"+suffix)
-
-
-
 

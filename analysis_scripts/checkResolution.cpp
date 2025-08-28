@@ -111,8 +111,8 @@ void checkResolution(const char *filename = "/home/giacomo/acts_for_NA60+/ACTS-A
 
 }
 
-void checkResolution(const char *filenameBase = "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_rubenxprino_40GeV_omega_filtered_ruben/tracksummary_ambi.root",
-                     const char *filenameCarbon = "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_rubenxprino_40GeV_omega_carbon_filtered_ruben/tracksummary_ambi.root")
+void checkResolution(const char *filenameBase = "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/tracksummary_ambi.root",
+                     const char *filenameCarbon = "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/tracksummary_ambi.root")
 {
 
     TFile *fileBase = TFile::Open(filenameBase);

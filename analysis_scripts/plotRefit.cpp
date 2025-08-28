@@ -111,26 +111,26 @@ void CheckRefit(const char *filenameRef = "tracksummary_ambims.root", const char
 
     std::string rootname = std::string("invmass") + outputname + std::string(".root");
     TFile *fout = new TFile(rootname.c_str(), "recreate");
-    TH1D *he_mass_Ref_min = new TH1D("he_mass_Ref_min", ";M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 150, -deltaM, +deltaM);
-    TH1D *he_mass_Ref_max = new TH1D("he_mass_Ref_max", ";M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 150, -deltaM, +deltaM);
-    TH1D *he_mass_best = new TH1D("he_mass_best", ";M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 150, -deltaM, +deltaM);
-    TH1D *he_mass_Ref = new TH1D("he_mass_Ref", ";M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 150, -deltaM, +deltaM);
-    TH2D *he_mass_vs_pt_Ref = new TH2D("he_mass_vs_pt_Ref", ";#it{p}_{T} (GeV/#it{c};M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 40, 0, 3, 150, -deltaM, +deltaM);
-    TH2D *he_mass_vs_y_Ref = new TH2D("he_mass_vs_y_Ref", ";#it{y};M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 40, 1.5, 5.5, 150, -deltaM, +deltaM);
-    TH1D *he_mass_VT = new TH1D("he_mass_VT", ";M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 150, -deltaM, +deltaM);
-    TH2D *he_mass_vs_pt_VT = new TH2D("he_mass_vs_pt_VT", ";#it{p}_{T} (GeV/#it{c};M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 40, 0, 3, 150, -deltaM, +deltaM);
-    TH2D *he_mass_vs_y_VT = new TH2D("he_mass_vs_y_VT", ";#it{y};M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 40, 1.5, 5.5, 150, -deltaM, +deltaM);
-    TH1D *he_mass_MS = new TH1D("he_mass_MS", ";M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 150, -deltaM, +deltaM);
-    TH2D *he_mass_vs_pt_MS = new TH2D("he_mass_vs_pt_MS", ";#it{p}_{T} (GeV/#it{c};M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 40, 0, 3, 150, -deltaM, +deltaM);
-    TH2D *he_mass_vs_y_MS = new TH2D("he_mass_vs_y_MS", ";#it{y};M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 40, 1.5, 5.5, 150, -deltaM, +deltaM);
+    TH1D *he_mass_Ref_min = new TH1D("he_mass_Ref_min", ";M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 150, Mdileton-deltaM, Mdileton+deltaM);
+    TH1D *he_mass_Ref_max = new TH1D("he_mass_Ref_max", ";M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 150, Mdileton-deltaM, Mdileton+deltaM);
+    TH1D *he_mass_best = new TH1D("he_mass_best", ";M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 150, Mdileton-deltaM, Mdileton+deltaM);
+    TH1D *he_mass_Ref = new TH1D("he_mass_Ref", ";M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 150, Mdileton-deltaM, Mdileton+deltaM);
+    TH2D *he_mass_vs_pt_Ref = new TH2D("he_mass_vs_pt_Ref", ";#it{p}_{T} (GeV/#it{c};M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 40, 0, 3, 150, Mdileton-deltaM, Mdileton+deltaM);
+    TH2D *he_mass_vs_y_Ref = new TH2D("he_mass_vs_y_Ref", ";#it{y};M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 40, 1.5, 5.5, 150, Mdileton-deltaM, Mdileton+deltaM);
+    TH1D *he_mass_VT = new TH1D("he_mass_VT", ";M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 150, Mdileton*0.8, Mdileton*0.8);
+    TH2D *he_mass_vs_pt_VT = new TH2D("he_mass_vs_pt_VT", ";#it{p}_{T} (GeV/#it{c};M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 40, 0, 3, 150, Mdileton-deltaM, Mdileton+deltaM);
+    TH2D *he_mass_vs_y_VT = new TH2D("he_mass_vs_y_VT", ";#it{y};M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 40, 1.5, 5.5, 150, Mdileton-deltaM, Mdileton+deltaM);
+    TH1D *he_mass_MS = new TH1D("he_mass_MS", ";M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 150, Mdileton*0.8, Mdileton*0.8);
+    TH2D *he_mass_vs_pt_MS = new TH2D("he_mass_vs_pt_MS", ";#it{p}_{T} (GeV/#it{c};M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 40, 0, 3, 150, Mdileton-deltaM, Mdileton+deltaM);
+    TH2D *he_mass_vs_y_MS = new TH2D("he_mass_vs_y_MS", ";#it{y};M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 40, 1.5, 5.5, 150, Mdileton-deltaM, Mdileton+deltaM);
     TH1D *hMatchingEff = new TH1D("hMatchingEff",";#it{p}_{T} (GeV/#it{c}); Matching efficiency",10,0,3);
     TH1D *hMatchingRef = new TH1D("hMatchingRef",";#it{p}_{T} (GeV/#it{c}); Matching efficiency",10,0,3);
-    TH2D *he_mass_Ref_vs_MS = new TH2D("he_mass_Ref_vs_MS", ";M_{#mu^{+}#mu^{-}}^{Refit} - M_{PDG} (GeV/#it{c}^{2});M_{#mu^{+}#mu^{-}}^{MS} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 150, -deltaM, +deltaM, 150, -deltaM, +deltaM);
-    TH2D *he_mass_Ref_vs_VT = new TH2D("he_mass_Ref_vs_VT", ";M_{#mu^{+}#mu^{-}}^{Refit} - M_{PDG} (GeV/#it{c}^{2});M_{#mu^{+}#mu^{-}}^{VT} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 150, -deltaM, +deltaM, 150, -deltaM, +deltaM);
-    TH1D *he_mass_delta = new TH1D("he_mass_delta", ";|M_{#mu^{+}#mu^{-}}^{Ref} - M_{PDG}|-|M_{#mu^{+}#mu^{-}}^{VT} - M_{PDG}| (GeV/#it{c}^{2});dN/dM", 150, -deltaM, +deltaM);
-    TH1D *he_mass_delta_min = new TH1D("he_mass_delta_min", ";|M_{#mu^{+}#mu^{-}}^{Ref} - M_{PDG}|-|M_{#mu^{+}#mu^{-}}^{VT} - M_{PDG}| (GeV/#it{c}^{2});dN/dM", 150, -deltaM, +deltaM);
-    TH1D *he_mass_delta_maj = new TH1D("he_mass_delta_maj", ";|M_{#mu^{+}#mu^{-}}^{Ref} - M_{PDG}|-|M_{#mu^{+}#mu^{-}}^{VT} - M_{PDG}| (GeV/#it{c}^{2});dN/dM", 150, -deltaM, +deltaM);
-    TH2D *he_mass_delta_vs_MS = new TH2D("he_mass_delta_vs_MS", ";M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 150, -deltaM, +deltaM, 150, -deltaM, +deltaM);
+    TH2D *he_mass_Ref_vs_MS = new TH2D("he_mass_Ref_vs_MS", ";M_{#mu^{+}#mu^{-}}^{Refit} - M_{PDG} (GeV/#it{c}^{2});M_{#mu^{+}#mu^{-}}^{MS} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 150, Mdileton-deltaM, Mdileton+deltaM, 150, Mdileton-deltaM, Mdileton+deltaM);
+    TH2D *he_mass_Ref_vs_VT = new TH2D("he_mass_Ref_vs_VT", ";M_{#mu^{+}#mu^{-}}^{Refit} - M_{PDG} (GeV/#it{c}^{2});M_{#mu^{+}#mu^{-}}^{VT} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 150, Mdileton-deltaM, Mdileton+deltaM, 150, Mdileton-deltaM, Mdileton+deltaM);
+    TH1D *he_mass_delta = new TH1D("he_mass_delta", ";|M_{#mu^{+}#mu^{-}}^{Ref} - M_{PDG}|-|M_{#mu^{+}#mu^{-}}^{VT} - M_{PDG}| (GeV/#it{c}^{2});dN/dM", 150, Mdileton-deltaM, Mdileton+deltaM);
+    TH1D *he_mass_delta_min = new TH1D("he_mass_delta_min", ";|M_{#mu^{+}#mu^{-}}^{Ref} - M_{PDG}|-|M_{#mu^{+}#mu^{-}}^{VT} - M_{PDG}| (GeV/#it{c}^{2});dN/dM", 150, Mdileton-deltaM, Mdileton+deltaM);
+    TH1D *he_mass_delta_maj = new TH1D("he_mass_delta_maj", ";|M_{#mu^{+}#mu^{-}}^{Ref} - M_{PDG}|-|M_{#mu^{+}#mu^{-}}^{VT} - M_{PDG}| (GeV/#it{c}^{2});dN/dM", 150, Mdileton-deltaM, Mdileton+deltaM);
+    TH2D *he_mass_delta_vs_MS = new TH2D("he_mass_delta_vs_MS", ";M_{#mu^{+}#mu^{-}} - M_{PDG} (GeV/#it{c}^{2});dN/dM", 150, Mdileton-deltaM, Mdileton+deltaM, 150, Mdileton-deltaM, Mdileton+deltaM);
     TH1D *hPRes_Ref = new TH1D("hPRes_Ref", ";(#it{p}^{Rec}-#it{p}^{Gen})/#it{p}^{Gen}; a.u.", 100, -0.3, 0.3);
     TH1D *hPRes_Ref_min = new TH1D("hPRes_Ref_min", ";(#it{p}^{Rec}-#it{p}^{Gen})/#it{p}^{Gen}; a.u.", 100, -0.3, 0.3);
     TH1D *hPRes_Ref_max = new TH1D("hPRes_Ref_max", ";(#it{p}^{Rec}-#it{p}^{Gen})/#it{p}^{Gen}; a.u.", 100, -0.3, 0.3);
@@ -364,13 +364,10 @@ void CheckRefit(const char *filenameRef = "tracksummary_ambims.root", const char
             double pz1_MS = p1_MS * std::cos(eTHETA_fit_MS->at(im));
             double E1_MS = std::sqrt(px1_MS * px1_MS + py1_MS * py1_MS + pz1_MS * pz1_MS + mass * mass);
 
-            if(TMath::Abs(p1_MS-pgen1)/pgen1>0.05){
-                //continue;
-            }
             for (int im2 = im + 1; im2 < t_nmu_Ref->size(); im2++)
             {
-                if(t_majPartId_VT->at(im)!=t_majPartId_MS->at(im)) continue;
-                if(t_majPartId_VT->at(im2)!=t_majPartId_MS->at(im2)) continue;
+                //if(t_majPartId_VT->at(im)!=t_majPartId_MS->at(im)) continue;
+                //if(t_majPartId_VT->at(im2)!=t_majPartId_MS->at(im2)) continue;
                 double pgen2 = t_p_Ref->at(im2);
                 double p2_Ref = 1.0 / std::abs(eQOP_fit_Ref->at(im2));
                 double px2_Ref = p2_Ref * std::sin(eTHETA_fit_Ref->at(im2)) * std::cos(ePHI_fit_Ref->at(im2));
@@ -390,9 +387,6 @@ void CheckRefit(const char *filenameRef = "tracksummary_ambims.root", const char
                 double pz2_MS = p2_MS * std::cos(eTHETA_fit_MS->at(im2));
                 double E2_MS = std::sqrt(px2_MS * px2_MS + py2_MS * py2_MS + pz2_MS * pz2_MS + mass * mass);
 
-                if(TMath::Abs(p2_MS-pgen2)/pgen2>0.05){
-                    //continue;
-                }
                 e_muon1_fit.SetPxPyPzE(px1_Ref, py1_Ref, pz1_Ref, E1_Ref);
                 e_muon2_fit.SetPxPyPzE(px2_Ref, py2_Ref, pz2_Ref, E2_Ref);
 
@@ -418,44 +412,44 @@ void CheckRefit(const char *filenameRef = "tracksummary_ambims.root", const char
                 double pMS2 = 1.0 / std::abs(eQOP_fit_MS->at(im2));
                 double pVT = 1.0 / std::abs(eQOP_fit_VT->at(im));
                 double pVT2 = 1.0 / std::abs(eQOP_fit_VT->at(im2));
-                //if(TMath::Abs(e_mass_MS - Mdileton) < 0.02)
+                //if(TMath::Abs(e_mass_MS) < 0.02)
 
                 if((pMS-t_p_Ref->at(im))/t_p_Ref->at(im) > -0.03 && (pMS2-t_p_Ref->at(im2))/t_p_Ref->at(im2) > -0.03){
-                    he_mass_Ref_max->Fill(e_mass_Ref - Mdileton);
+                    he_mass_Ref_max->Fill(e_mass_Ref);
                     
                 }
                 else{
-                    he_mass_Ref_min->Fill(e_mass_Ref - Mdileton);
+                    he_mass_Ref_min->Fill(e_mass_Ref);
                 }
 
                 if((pMS-pVT)/pVT > -0.03 && (pMS2-pVT2)/pVT2 > -0.03){
-                    he_mass_Ref_max->Fill(e_mass_Ref - Mdileton);
-                    he_mass_best->Fill(e_mass_Ref - Mdileton);
+                    he_mass_Ref_max->Fill(e_mass_Ref);
+                    he_mass_best->Fill(e_mass_Ref);
                     
                 }
                 else{
-                    he_mass_Ref_min->Fill(e_mass_Ref - Mdileton);
-                    he_mass_best->Fill(e_mass_VT - Mdileton);
+                    he_mass_Ref_min->Fill(e_mass_Ref);
+                    he_mass_best->Fill(e_mass_VT);
                 }
-                he_mass_Ref->Fill(e_mass_Ref - Mdileton);
-                he_mass_vs_y_Ref->Fill(e_y_Ref, e_mass_Ref - Mdileton);
-                he_mass_vs_pt_Ref->Fill(e_pt_Ref, e_mass_Ref - Mdileton);
-                he_mass_VT->Fill(e_mass_VT - Mdileton);
-                he_mass_vs_y_VT->Fill(e_y_VT, e_mass_VT - Mdileton);
-                he_mass_vs_pt_VT->Fill(e_pt_VT, e_mass_VT - Mdileton);
-                he_mass_MS->Fill(e_mass_MS - Mdileton);
-                he_mass_vs_y_MS->Fill(e_y_MS, e_mass_MS - Mdileton);
-                he_mass_vs_pt_MS->Fill(e_pt_MS, e_mass_MS - Mdileton);
+                he_mass_Ref->Fill(e_mass_Ref);
+                he_mass_vs_y_Ref->Fill(e_y_Ref, e_mass_Ref);
+                he_mass_vs_pt_Ref->Fill(e_pt_Ref, e_mass_Ref);
+                he_mass_VT->Fill(e_mass_VT);
+                he_mass_vs_y_VT->Fill(e_y_VT, e_mass_VT);
+                he_mass_vs_pt_VT->Fill(e_pt_VT, e_mass_VT);
+                he_mass_MS->Fill(e_mass_MS);
+                he_mass_vs_y_MS->Fill(e_y_MS, e_mass_MS);
+                he_mass_vs_pt_MS->Fill(e_pt_MS, e_mass_MS);
 
-                he_mass_Ref_vs_MS->Fill( e_mass_MS - Mdileton,e_mass_Ref - Mdileton);
-                he_mass_Ref_vs_VT->Fill(e_mass_VT - Mdileton,e_mass_Ref - Mdileton);
-                he_mass_delta->Fill(TMath::Abs(e_mass_Ref - Mdileton)-TMath::Abs(e_mass_VT - Mdileton));
-                he_mass_delta_vs_MS->Fill(TMath::Abs(e_mass_Ref - Mdileton)-TMath::Abs(e_mass_VT - Mdileton),e_mass_MS - Mdileton);
+                he_mass_Ref_vs_MS->Fill( e_mass_MS,e_mass_Ref);
+                he_mass_Ref_vs_VT->Fill(e_mass_VT,e_mass_Ref);
+                he_mass_delta->Fill(TMath::Abs(e_mass_Ref)-TMath::Abs(e_mass_VT));
+                he_mass_delta_vs_MS->Fill(TMath::Abs(e_mass_Ref)-TMath::Abs(e_mass_VT),e_mass_MS);
 
                 if((pMS-t_p_Ref->at(im))/t_p_Ref->at(im) > -0.03 && (pMS2-t_p_Ref->at(im2))/t_p_Ref->at(im2) > -0.03)
-                    he_mass_delta_maj->Fill(TMath::Abs(e_mass_Ref - Mdileton)-TMath::Abs(e_mass_VT - Mdileton));
+                    he_mass_delta_maj->Fill(TMath::Abs(e_mass_Ref)-TMath::Abs(e_mass_VT));
                 else
-                    he_mass_delta_min->Fill(TMath::Abs(e_mass_Ref - Mdileton)-TMath::Abs(e_mass_VT - Mdileton));
+                    he_mass_delta_min->Fill(TMath::Abs(e_mass_Ref)-TMath::Abs(e_mass_VT));
             }
         }
     }
@@ -583,7 +577,7 @@ void CheckRefit(const char *filenameRef = "tracksummary_ambims.root", const char
     std::string pngname = outputname + std::string("_mass_comp.png");
     cv->Update();
     cv->SaveAs(pngname.c_str());
-    gStyle->SetOptStat(0);
+    gStyle->SetOptStat(111111);
 
     TLegend* leg2 = new TLegend(0.6,0.6,0.9,0.9);
     // p res
@@ -687,14 +681,14 @@ void CheckRefit(const char *filenameRef = "tracksummary_ambims.root", const char
     cv->SaveAs(pngname.c_str());
     ///////////////////////////////////////////
     TLegend* leg4= new TLegend(0.6,0.6,0.9,0.9);
-
-    he_mass_best->SetLineColor(kRed);
+    // per il proposals
+    he_mass_MS->SetLineColor(kRed);
     he_mass_VT->SetLineColor(kBlue);
     he_mass_VT->Draw();
-    he_mass_best->Draw("same");
-    leg4->AddEntry(he_mass_VT,"VT only", "l");
-    leg4->AddEntry(he_mass_best,"Best option", "l");
-    leg4->Draw();
+    he_mass_MS->Draw("same");
+    leg4->AddEntry(he_mass_VT,"Combined", "l");
+    leg4->AddEntry(he_mass_MS,"MS only", "l");
+    //leg4->Draw();
 
     pngname = outputname + std::string("_mbest.png");
     cv->Update();
@@ -708,17 +702,17 @@ void CheckRefit(const char *filenameRef = "tracksummary_ambims.root", const char
     std::cout<<"VT+MS m resolution with small E loss: "<<he_mass_Ref_max->GetRMS()*1000.<<" +- "<<he_mass_Ref_max->GetRMSError()*1000.<<" MeV/c^2"<<std::endl;
     std::cout<<"VT+MS m resolution with large E loss: "<<he_mass_Ref_min->GetRMS()*1000.<<" +- "<<he_mass_Ref_min->GetRMSError()*1000.<<" MeV/c^2"<<std::endl;
     
-    he_mass_best->Fit("gaus", "", "", -deltaM/2., deltaM/2.);
+    he_mass_best->Fit("gaus", "", "", Mdileton-deltaM/2., Mdileton+ deltaM/2.);
     TF1 *fitFunction_best = he_mass_best->GetFunction("gaus");
-    he_mass_VT->Fit("gaus", "", "", -deltaM/2., deltaM/2.);
+    he_mass_VT->Fit("gaus", "", "", Mdileton-deltaM/2., Mdileton+ deltaM/2.);
     TF1 *fitFunction_VT = he_mass_VT->GetFunction("gaus");
-    he_mass_MS->Fit("gaus", "", "", -deltaM/2., deltaM/2.);
+    he_mass_MS->Fit("gaus", "", "", Mdileton-deltaM/2., Mdileton+ deltaM/2.);
     TF1 *fitFunction_MS = he_mass_MS->GetFunction("gaus");
-    he_mass_Ref->Fit("gaus", "", "", -deltaM/2., deltaM/2.);
+    he_mass_Ref->Fit("gaus", "", "", Mdileton-deltaM/2., Mdileton+ deltaM/2.);
     TF1 *fitFunction_Ref = he_mass_Ref->GetFunction("gaus");
-    he_mass_Ref_max->Fit("gaus", "", "", -deltaM/2., deltaM/2.);
+    he_mass_Ref_max->Fit("gaus", "", "", Mdileton-deltaM/2., Mdileton+ deltaM/2.);
     TF1 *fitFunction_Ref_max = he_mass_Ref_max->GetFunction("gaus");
-    he_mass_Ref_min->Fit("gaus", "", "", -deltaM/2., deltaM/2.);
+    he_mass_Ref_min->Fit("gaus", "", "", Mdileton-deltaM/2., Mdileton+ deltaM/2.);
     TF1 *fitFunction_Ref_min = he_mass_Ref_min->GetFunction("gaus");
     std::cout<<"FIT RESULTS"<<std::endl;
     std::cout<<"Best m resolution: "<<fitFunction_best->GetParameter(2)*1000.<<" +- "<<fitFunction_best->GetParError(2)*1000.<<" MeV/c^2"<<std::endl;
@@ -736,16 +730,13 @@ void CheckRefit(const char *filenameRef = "tracksummary_ambims.root", const char
 
 void plotRefit()
 {
-    CheckRefit("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_omega2Body/tracksummary_matched.root",
-        "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_omega2Body/tracksummary_matchedVT.root",
-        "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_omega2Body/tracksummary_matchedMS.root", "tracksummary", "omega", 223);
+    CheckRefit("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_omega_full_muons_maxSeedsPerSpM_primary_1_maxSeedsPerSpM_secondary_20_numMeasurementsCutOff_1_chi2CutOff_15_fatras/tracksummary_matched.root",
+                "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_omega_full_muons_maxSeedsPerSpM_primary_1_maxSeedsPerSpM_secondary_20_numMeasurementsCutOff_1_chi2CutOff_15_fatras/tracksummary_matchedVT.root",
+                "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_omega_full_muons_maxSeedsPerSpM_primary_1_maxSeedsPerSpM_secondary_20_numMeasurementsCutOff_1_chi2CutOff_15_fatras/tracksummary_matchedMS.root", "tracksummary", "omega", 223);
     
-        CheckRefit("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_jpsi/tracksummary_matched.root",
-        "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_jpsi/tracksummary_matchedVT.root",
-        "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_jpsi/tracksummary_matchedMS.root", "tracksummary", "jpsi", 443);
-        
-    //CheckRefit("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_omega2Body_full/tracksummary_matched.root",
-    //    "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_omega2Body_full/tracksummary_matchedVT.root",
-    //    "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_omega2Body_full/tracksummary_matchedMS.root", "tracksummary", "omegaFull", 223);
-        
+    CheckRefit("/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_jpsi_full_muons_maxSeedsPerSpM_primary_1_maxSeedsPerSpM_secondary_20_numMeasurementsCutOff_1_chi2CutOff_15_fatras/tracksummary_matched.root",
+                "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_jpsi_full_muons_maxSeedsPerSpM_primary_1_maxSeedsPerSpM_secondary_20_numMeasurementsCutOff_1_chi2CutOff_15_fatras/tracksummary_matchedVT.root",
+                "/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/output/output_jpsi_full_muons_maxSeedsPerSpM_primary_1_maxSeedsPerSpM_secondary_20_numMeasurementsCutOff_1_chi2CutOff_15_fatras/tracksummary_matchedMS.root", "tracksummary", "jpsi", 443);
+    
+    
 }
