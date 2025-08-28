@@ -1,39 +1,110 @@
 #!/bin/bash
 
 # Define an array of directory names
-directories=("geoRubenNewCarbon")
-python_dir=/home/giacomo/acts_for_NA60+/acts_old/Examples/Scripts/Python
+geo_dirs=("geoRuben_VTOnly")
+acts_dir=/home/giacomo/acts_for_NA60+/acts/Examples/Scripts
 geo_dir=/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/geometry
-for dir in "${directories[@]}"; do
-    echo "Processing $dir..."
+use_old_acts=false
+run_mapping=true
+plot_mapping=true
+
+if $use_old_acts; then  
+    #geo_dirs=("VTOnly_thickness_0.01" "VTOnly_thickness_0.05" "VTOnly_thickness_0.1" "VTOnly_thickness_0.25" "VTOnly_thickness_0.5" "VTOnly_thickness_1.0" )
+    geo_dirs=("fullgeo" "nofullgeo")
+else
+    geo_dirs=("fullgeo")
+fi
+
+for geo_dir in "${geo_dirs[@]}"; do
+    echo "Processing $geo_dir..."
+    
+    # Set python_dir to the current directory being processed
+    python_dir=$(pwd)/$geo_dir
     
     # Create the directory if it doesn't exist
-    mkdir -p "$dir"
+    mkdir -p "$geo_dir"
     
-    # Convert response to JSON
-    python3 /home/giacomo/acts_for_NA60+/acts_old/Examples/Scripts/Detectors/TGeoDetector/tgeo-response2json.py tgeo-json-config_muons_Ruben_VTMS.response > "$dir/tgeoRubenVol.json"
+    python3 makeGDML.py $geo_dir
 
     # Clean up previous runs
     rm -rf obj/* csv/*
 
-    # Run geometry conversion
-    python3 $python_dir/geometry.py --jsonFile="$geo_dir/$dir/tgeoRubenVol.json" --tgeo_fileName="$geo_dir/$dir/geometry_Ruben.root"
+    if $run_mapping; then
+        if $use_old_acts; then
+            acts_dir=/home/giacomo/acts_for_NA60+/acts_old/Examples/Scripts
 
-    # Run material recording
-    python3 $python_dir/material_recording.py --input="$geo_dir/$dir/geometry_Ruben.gdml" --tracks=100 -n 10000
+            echo "Running with Ruben's geometry configuration..."
+            # Convert response to JSON
+            python3 /home/giacomo/acts_for_NA60+/acts_old/Examples/Scripts/Detectors/TGeoDetector/tgeo-response2json.py tgeo-json-config_muons_Ruben_VT.response > "$geo_dir/tgeoRubenVol.json"
 
-    # Run material mapping
-    python3 $python_dir/material_mapping.py --jsonFile="$geo_dir/$dir/tgeoRubenVol.json" --tgeo_fileName="$geo_dir/$dir/geometry_Ruben.root"
+            echo $geo_dir
+            # Run geometry conversion
+            python3 $acts_dir/Python/geometry.py --jsonFile="$geo_dir/tgeoRubenVol.json" --tgeo_fileName="$geo_dir/geometry.root"
 
-    # Run material validation
-    python3 $python_dir/material_validation.py -o propagation-material -n 10000 --jsonFile="$geo_dir/$dir/tgeoRubenVol.json" --tgeo_fileName="$geo_dir/$dir/geometry_Ruben.root" > "$dir/test.out"
+            python3 geomap_modifier.py -o "geometry-map.json" -n "geometry-map-new.json"
 
-    # Move output files
-    mv propagation-material.root "$dir/"
-    mv geometry-map.json "$dir/"
-    mv geant4_material_tracks.root "$dir/"
-    mv material-map.json "$dir/"
-    mv material-map_tracks.root "$dir/"
+            # Run material recording
+            python3 $acts_dir/Python/material_recording.py --input="$geo_dir/geometry.gdml" --tracks=100 -n 10000
 
-    echo "Finished processing $dir."
+            # Run material mapping
+            python3 $acts_dir/Python/material_mapping.py --jsonFile="$geo_dir/tgeoRubenVol.json" --tgeo_fileName="$geo_dir/geometry.root" -i "geometry-map-new.json" -o "material-map.json" 
+
+            # Run material validation
+            python3 $acts_dir/Python/material_validation.py -o propagation-material -n 10000 --jsonFile="$geo_dir/tgeoRubenVol.json" --tgeo_fileName="$geo_dir/geometry.root" > "$geo_dir/test.out"
+
+        else
+
+            # Run geometry conversion
+            python3 $acts_dir/Python/dice_geometry.py
+
+            python3 geomap_modifier.py -o "geometry-map.json" -n "geometry-map-new.json"
+
+            # Run material recording
+            python3 $acts_dir/Python/material_recording_dice.py --input="$geo_dir/geometry.gdml" --tracks=50 -n 1000
+
+            # Run material mapping
+            python3 $acts_dir/Python/material_mapping_dice.py -i "geometry-map-new.json" -o "material-map.json"
+
+            # Run material validation
+            python3 $acts_dir/Python/material_validation_dice.py -o propagation-material -n 10000  -m "material-map.json" -t 100
+            
+        fi    
+
+        # Move output files
+        mv propagation-material.root "$geo_dir/"
+        mv geometry-map.json "$geo_dir/"
+        mv geometry-map-new.json "$geo_dir/"
+        mv geant4_material_tracks.root "$geo_dir/"
+        mv material-map.json "$geo_dir/"
+        mv material-map_tracks.root "$geo_dir/"
+    fi
+
+    if $plot_mapping; then
+        
+        if $use_old_acts; then
+            acts_dir=/home/giacomo/acts_for_NA60+/acts_old/Examples/Scripts
+        fi
+        mkdir -p "$python_dir/Validation"
+
+        echo ${acts_dir}/MaterialMapping/Mat_map.C
+        
+         root -l -b $acts_dir/MaterialMapping/Mat_map.C'("'"$python_dir/propagation-material.root"'","'"$python_dir/material-map_tracks.root"'","'"$python_dir/Validation"'")' <<< '.q'
+        
+        mkdir -p "$python_dir/Surfaces"
+        mkdir -p "$python_dir/Surfaces/prop_plot"
+        mkdir -p "$python_dir/Surfaces/map_plot"
+        mkdir -p "$python_dir/Surfaces/ratio_plot"
+        mkdir -p "$python_dir/Surfaces/dist_plot"
+        mkdir -p "$python_dir/Surfaces/1D_plot"
+        
+        root -l -b $acts_dir/MaterialMapping/Mat_map_surface_plot_ratio.C'("'"$python_dir/propagation-material.root"'","'"$python_dir/material-map_tracks.root"'",10000,"'"$python_dir/Surfaces/ratio_plot"'","'"$python_dir/Surfaces/prop_plot"'","'"$python_dir/Surfaces/map_plot"'")' <<< '.q'
+        
+        root -l -b $acts_dir/MaterialMapping/Mat_map_surface_plot_dist.C'("'"$python_dir/propagation-material.root"'",-1,"'"$python_dir/Surfaces/dist_plot"'")' <<< '.q'
+        
+        root -l -b $acts_dir/MaterialMapping/Mat_map_surface_plot_1D.C'("'"$python_dir/propagation-material.root"'",100000,"'"$python_dir/Surfaces/1D_plot"'")' <<< '.q'
+        
+
+    fi
+
+    #echo "Finished processing $geo_dir."
 done
