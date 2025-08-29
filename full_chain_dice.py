@@ -92,8 +92,8 @@ def runFullChain(
 
     dirVT = "event_generation/simulatedEvents/events_40GeV"
 
-    field = acts.examples.MagneticFieldMapXyz("bfield/field_map.txt")
-    field_rotated = acts.examples.MagneticFieldMapXyz("bfield/rotated_field_map.txt")
+    #field = acts.examples.MagneticFieldMapXyz("bfield/field_map.txt")
+    #field_rotated = acts.examples.MagneticFieldMapXyz("bfield/rotated_field_map.txt")
 
 
     field = acts.ConstantBField(acts.Vector3(
@@ -122,7 +122,7 @@ def runFullChain(
         s,
         trackingGeometry,
         field,
-        digiConfigFile="geometry/digismearVT.json",
+        digiConfigFile="geometry/digismear.json",
         outputDirRoot=outputDir,
         rnd=rnd,
     )
@@ -142,7 +142,7 @@ def runFullChain(
         trackingGeometry,
         field_rotated,
         seedingAlgorithm=SeedingAlgorithm.Default,
-        geoSelectionConfigFile="geometry/seed_configVT_old.json",
+        geoSelectionConfigFile="geometry/seed_config_VS.json",
         outputDirRoot=outputDir,
         logLevel=acts.logging.ERROR,
         seedFinderOptionsArg=SeedFinderOptionsArg(  # NO NEED TO CHANGE THIS
@@ -203,7 +203,8 @@ def runFullChain(
         field,
         ckfConfig=CkfConfig(
             seedDeduplication=True,
-            stayOnSeed=True
+            stayOnSeed=True,
+            constrainToVolumes=[3,5]
         ),
         trackSelectorConfig = TrackSelectorConfig(
             pt=(0 * u.MeV, None),
@@ -241,10 +242,10 @@ if "__main__" == __name__:
     logLevel = acts.logging.INFO
     customLogLevel = acts.examples.defaultLogging(logLevel=logLevel)
 
-    materialDecorator = (
+    matDeco = (
         acts.IMaterialDecorator.fromFile("geometry/fullgeo/material-map.json")
     )
-    detector = buildDICEgeometry()
+    detector = buildDICEgeometry(matDeco=matDeco)
     trackingGeometry = detector.trackingGeometry()
     decorators = detector.contextDecorators()
 

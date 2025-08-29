@@ -1,7 +1,6 @@
 #!/bin/bash
 
 # Define an array of directory names
-geo_dirs=("geoRuben_VTOnly")
 acts_dir=/home/giacomo/acts_for_NA60+/acts/Examples/Scripts
 geo_dir=/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/geometry
 use_old_acts=false
@@ -14,6 +13,9 @@ if $use_old_acts; then
 else
     geo_dirs=("fullgeo")
 fi
+
+mkdir -p obj
+mkdir -p csv
 
 for geo_dir in "${geo_dirs[@]}"; do
     echo "Processing $geo_dir..."
