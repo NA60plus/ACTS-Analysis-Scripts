@@ -45,31 +45,10 @@ if "__main__" == __name__:
     if json_data:
         surface = json_data["Surfaces"]["entries"]
         for auto in surface:
-            if "approach" in auto and (auto["layer"] == 2 or auto["layer"] == 4 or auto["layer"] == 6 or auto["layer"] == 8 or auto["layer"] == 10):
+            if "approach" in auto and (auto["layer"] == 2 or auto["layer"] == 4 or auto["layer"] == 6 or auto["layer"] == 8 or auto["layer"] == 10 or auto["layer"] == 12):
                 auto["value"]["material"]["binUtility"]["binningdata"][0]["bins"] = 20
                 auto["value"]["material"]["binUtility"]["binningdata"][1]["bins"] = 40
                 
                 auto["value"]["material"]["mapMaterial"]=True
-
-                """
-                
-                auto["value"]["material"]["mapMaterial"]=True
-                if auto["approach"] == 1 and auto["layer"] != 10:
-                    auto["value"]["material"]["binUtility"]["binningdata"][0]["bins"] = 314
-                    auto["value"]["material"]["binUtility"]["binningdata"][1]["bins"] = 100
-                    auto["value"]["material"]["mapMaterial"]=True
-                elif auto["layer"] == 1 and auto["approach"] == 2:
-                    auto["value"]["material"]["binUtility"]["binningdata"][0]["bins"] = 314
-                    auto["value"]["material"]["binUtility"]["binningdata"][1]["bins"] = 100
-                    auto["value"]["material"]["mapMaterial"]=True
-                elif auto["layer"] == 18 and auto["approach"] == 2:
-                    auto["value"]["material"]["binUtility"]["binningdata"][0]["bins"] = 314
-                    auto["value"]["material"]["binUtility"]["binningdata"][1]["bins"] = 100
-                    auto["value"]["material"]["mapMaterial"]=True
-                elif auto["layer"] == 10 and auto["approach"] == 2:
-                    auto["value"]["material"]["binUtility"]["binningdata"][0]["bins"] = 314
-                    auto["value"]["material"]["binUtility"]["binningdata"][1]["bins"] = 100
-                    auto["value"]["material"]["mapMaterial"]=True
-                        """
                     
     save_json(args.newgeo, json_data)

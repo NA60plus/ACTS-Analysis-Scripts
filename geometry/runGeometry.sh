@@ -6,6 +6,17 @@ geo_dir=/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/geometry
 use_old_acts=false
 run_mapping=true
 plot_mapping=true
+removeVS=false
+removeMS=true
+
+opts=""
+if $removeVS; then
+  opts="$opts --remove-vs"
+fi
+if $removeMS; then
+  opts="$opts --remove-ms"
+fi
+
 
 if $use_old_acts; then  
     #geo_dirs=("VTOnly_thickness_0.01" "VTOnly_thickness_0.05" "VTOnly_thickness_0.1" "VTOnly_thickness_0.25" "VTOnly_thickness_0.5" "VTOnly_thickness_1.0" )
@@ -55,20 +66,19 @@ for geo_dir in "${geo_dirs[@]}"; do
             python3 $acts_dir/Python/material_validation.py -o propagation-material -n 10000 --jsonFile="$geo_dir/tgeoRubenVol.json" --tgeo_fileName="$geo_dir/geometry.root" > "$geo_dir/test.out"
 
         else
-
             # Run geometry conversion
-            python3 $acts_dir/Python/dice_geometry.py
-
+            python3 $acts_dir/Python/dice_geometry.py $opts
+            
             python3 geomap_modifier.py -o "geometry-map.json" -n "geometry-map-new.json"
 
             # Run material recording
             python3 $acts_dir/Python/material_recording_dice.py --input="$geo_dir/geometry.gdml" --tracks=50 -n 1000
 
             # Run material mapping
-            python3 $acts_dir/Python/material_mapping_dice.py -i "geometry-map-new.json" -o "material-map.json"
+            python3 $acts_dir/Python/material_mapping_dice.py -i "geometry-map-new.json" -o "material-map.json" $opts
 
             # Run material validation
-            python3 $acts_dir/Python/material_validation_dice.py -o propagation-material -n 10000  -m "material-map.json" -t 100
+            python3 $acts_dir/Python/material_validation_dice.py -o propagation-material -n 10000  -m "material-map.json" -t 100  $opts
             
         fi    
 

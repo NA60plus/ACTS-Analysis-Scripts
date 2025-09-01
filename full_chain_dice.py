@@ -47,6 +47,12 @@ from acts.examples.reconstruction import (
     AmbiguityResolutionConfig,
     addUsedMeasurementsFilter,
 )
+"""
+What should be added:
+- FATRAS with genereated tracks and hits from Geant4
+
+
+"""
 
 def getArgumentParser():
     """Get arguments from command line"""
@@ -54,14 +60,16 @@ def getArgumentParser():
 
     parser.add_argument(
         "-n",
-        "--nEvents",
-        dest="nEvts",
+        "--nev",
+        dest="nev",
         help="Number of events to run over",
         default=1,
         type=int,
     )
 
-
+    parser.add_argument("-f","--fatras", action="store_true", help="Run FATRAS simulation")
+    parser.add_argument("-rvs","--remove-vs", action="store_true", help="Remove Vertex Spectrometer from the geometry")
+    parser.add_argument("-rms","--remove-ms", action="store_true", help="Remove Muon Spectrometer from the geometry")
     return parser
 
 
@@ -92,13 +100,7 @@ def runFullChain(
 
     dirVT = "event_generation/simulatedEvents/events_40GeV"
 
-    #field = acts.examples.MagneticFieldMapXyz("bfield/field_map.txt")
-    #field_rotated = acts.examples.MagneticFieldMapXyz("bfield/rotated_field_map.txt")
-
-
-    field = acts.ConstantBField(acts.Vector3(
-        0.0, 1.5 * u.T,  0.0))  # ~dipole field
-    field_rotated = acts.ConstantBField(acts.Vector3(0.0, 0.0, -1.5 * u.T))    
+    field = acts.examples.MagneticFieldMapXyz("bfield/field_map.txt")
     
     inputDirVT = pathlib.Path.cwd() / dirVT
     addParticleReader(
@@ -140,11 +142,11 @@ def runFullChain(
     addSeeding(
         s,
         trackingGeometry,
-        field_rotated,
+        field,
         seedingAlgorithm=SeedingAlgorithm.Default,
         geoSelectionConfigFile="geometry/seed_config_VS.json",
         outputDirRoot=outputDir,
-        logLevel=acts.logging.ERROR,
+        logLevel=acts.logging.DEBUG,
         seedFinderOptionsArg=SeedFinderOptionsArg(  # NO NEED TO CHANGE THIS
             beamPos=(0 * u.mm, 0 * u.mm, 0 * u.mm),
             bFieldInZ=1.5 * u.T,
@@ -156,7 +158,7 @@ def runFullChain(
             sigmaScattering=5.0,
             radLengthPerSeed=10,
             minPt=100 * u.MeV,
-            impactMax=2 * u.mm,
+            impactMax=1 * u.mm,
             interactionPointCut=True,
             deltaRTopSP=(
                 50 * u.mm,
@@ -166,8 +168,8 @@ def runFullChain(
                 50 * u.mm,
                 150 * u.mm,
             ),  # min and max R between Middle and Bottom SP
-            collisionRegion=(-2 * u.mm, 2 * u.mm),
-            r=(0 * u.mm, 500 * u.mm),
+            collisionRegion=(-1 * u.mm, 1 * u.mm),
+            r=(0 * u.mm, 250 * u.mm),
             rMiddle=(139 * u.mm, 220 * u.mm)
         ),
         seedFilterConfigArg=SeedFilterConfigArg(
@@ -204,13 +206,11 @@ def runFullChain(
         ckfConfig=CkfConfig(
             seedDeduplication=True,
             stayOnSeed=True,
-            constrainToVolumes=[3,5]
+            constrainToVolumes=[1],
+            #endOfWorldVolumes=[5]
+
         ),
-        trackSelectorConfig = TrackSelectorConfig(
-            pt=(0 * u.MeV, None),
-            absEta=(None, None),
-            nMeasurementsMin=4,
-        ),
+        trackSelectorConfig = TRACKSELECTORCONFIG,
         twoWay = True,
         outputDirRoot=outputDir,
         writeTrackSummary=False
@@ -219,11 +219,7 @@ def runFullChain(
 
     addAmbiguityResolution(
         s,
-        AmbiguityResolutionConfig(
-            maximumSharedHits=1,
-            maximumIterations=1000000,
-            nMeasurementsMin=5,
-        ),
+        AMBIGUITYRESOLUTIONCONFIG,
         outputDirRoot=outputDir,
     )
 
@@ -236,7 +232,7 @@ def runFullChain(
     return s
 
 if "__main__" == __name__:
-
+    
     options = getArgumentParser().parse_args()
 
     logLevel = acts.logging.INFO
@@ -245,7 +241,7 @@ if "__main__" == __name__:
     matDeco = (
         acts.IMaterialDecorator.fromFile("geometry/fullgeo/material-map.json")
     )
-    detector = buildDICEgeometry(matDeco=matDeco)
+    detector = buildDICEgeometry(matDeco=matDeco,addVS=not options.remove_vs, addMS=not options.remove_ms)
     trackingGeometry = detector.trackingGeometry()
     decorators = detector.contextDecorators()
 
@@ -255,5 +251,5 @@ if "__main__" == __name__:
     rnd = acts.examples.RandomNumbers(seed=44)
 
     runFullChain(
-        NumEvents=options.nEvts
+        NumEvents=options.nev
     ).run()
