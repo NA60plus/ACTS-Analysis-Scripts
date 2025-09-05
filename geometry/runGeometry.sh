@@ -2,7 +2,6 @@
 
 # Define an array of directory names
 acts_dir=/home/giacomo/acts_for_NA60+/acts/Examples/Scripts
-geo_dir=/home/giacomo/acts_for_NA60+/ACTS-Analysis-Scripts/geometry
 use_old_acts=false
 run_mapping=true
 plot_mapping=true
@@ -17,13 +16,7 @@ if $removeMS; then
   opts="$opts --remove-ms"
 fi
 
-
-if $use_old_acts; then  
-    #geo_dirs=("VTOnly_thickness_0.01" "VTOnly_thickness_0.05" "VTOnly_thickness_0.1" "VTOnly_thickness_0.25" "VTOnly_thickness_0.5" "VTOnly_thickness_1.0" )
-    geo_dirs=("fullgeo" "nofullgeo")
-else
-    geo_dirs=("fullgeo")
-fi
+geo_dirs=("fullgeo_noms")
 
 mkdir -p obj
 mkdir -p csv
@@ -43,45 +36,20 @@ for geo_dir in "${geo_dirs[@]}"; do
     rm -rf obj/* csv/*
 
     if $run_mapping; then
-        if $use_old_acts; then
-            acts_dir=/home/giacomo/acts_for_NA60+/acts_old/Examples/Scripts
+        # Run geometry conversion
+        opts_tmp="${opts} --geometry-file $geo_dirs/geometry.root"
+        python3 $acts_dir/Python/dice_geometry.py $opts_tmp
+        
+        python3 geomap_modifier.py -o "geometry-map.json" -n "geometry-map-new.json"
 
-            echo "Running with Ruben's geometry configuration..."
-            # Convert response to JSON
-            python3 /home/giacomo/acts_for_NA60+/acts_old/Examples/Scripts/Detectors/TGeoDetector/tgeo-response2json.py tgeo-json-config_muons_Ruben_VT.response > "$geo_dir/tgeoRubenVol.json"
+        # Run material recording
+        python3 $acts_dir/Python/material_recording_dice.py --input="$geo_dir/geometry.gdml" --tracks=50 -n 1000
 
-            echo $geo_dir
-            # Run geometry conversion
-            python3 $acts_dir/Python/geometry.py --jsonFile="$geo_dir/tgeoRubenVol.json" --tgeo_fileName="$geo_dir/geometry.root"
+        # Run material mapping
+        python3 $acts_dir/Python/material_mapping_dice.py -i "geometry-map-new.json" -o "material-map.json" $opts_tmp
 
-            python3 geomap_modifier.py -o "geometry-map.json" -n "geometry-map-new.json"
-
-            # Run material recording
-            python3 $acts_dir/Python/material_recording.py --input="$geo_dir/geometry.gdml" --tracks=100 -n 10000
-
-            # Run material mapping
-            python3 $acts_dir/Python/material_mapping.py --jsonFile="$geo_dir/tgeoRubenVol.json" --tgeo_fileName="$geo_dir/geometry.root" -i "geometry-map-new.json" -o "material-map.json" 
-
-            # Run material validation
-            python3 $acts_dir/Python/material_validation.py -o propagation-material -n 10000 --jsonFile="$geo_dir/tgeoRubenVol.json" --tgeo_fileName="$geo_dir/geometry.root" > "$geo_dir/test.out"
-
-        else
-            # Run geometry conversion
-            python3 $acts_dir/Python/dice_geometry.py $opts
-            
-            python3 geomap_modifier.py -o "geometry-map.json" -n "geometry-map-new.json"
-
-            # Run material recording
-            python3 $acts_dir/Python/material_recording_dice.py --input="$geo_dir/geometry.gdml" --tracks=50 -n 1000
-
-            # Run material mapping
-            python3 $acts_dir/Python/material_mapping_dice.py -i "geometry-map-new.json" -o "material-map.json" $opts
-
-            # Run material validation
-            python3 $acts_dir/Python/material_validation_dice.py -o propagation-material -n 10000  -m "material-map.json" -t 100  $opts
-            
-        fi    
-
+        # Run material validation
+        python3 $acts_dir/Python/material_validation_dice.py -o propagation-material -n 10000  -m "material-map.json" -t 100  $opts_tmp
         # Move output files
         mv propagation-material.root "$geo_dir/"
         mv geometry-map.json "$geo_dir/"
