@@ -2,11 +2,12 @@
 
 # Define an array of directory names
 acts_dir=/home/giacomo/acts_for_NA60+/acts/Examples/Scripts
-use_old_acts=false
 run_mapping=true
 plot_mapping=true
 removeVS=false
-removeMS=true
+removeMS=false
+nevts=300
+ntracks=100
 
 opts=""
 if $removeVS; then
@@ -16,7 +17,7 @@ if $removeMS; then
   opts="$opts --remove-ms"
 fi
 
-geo_dirs=("fullgeo_noms")
+geo_dirs=("fullgeo")
 
 mkdir -p obj
 mkdir -p csv
@@ -43,13 +44,13 @@ for geo_dir in "${geo_dirs[@]}"; do
         python3 geomap_modifier.py -o "geometry-map.json" -n "geometry-map-new.json"
 
         # Run material recording
-        python3 $acts_dir/Python/material_recording_dice.py --input="$geo_dir/geometry.gdml" --tracks=50 -n 1000
+        python3 $acts_dir/Python/material_recording_dice.py --input="$geo_dir/geometry.gdml" --tracks=$ntracks -n $nevts
 
         # Run material mapping
-        python3 $acts_dir/Python/material_mapping_dice.py -i "geometry-map-new.json" -o "material-map.json" $opts_tmp
+        python3 $acts_dir/Python/material_mapping_dice.py -i "geometry-map-new.json" -o "material-map.json" $opts_tmp  -n $nevts
 
         # Run material validation
-        python3 $acts_dir/Python/material_validation_dice.py -o propagation-material -n 10000  -m "material-map.json" -t 100  $opts_tmp
+        python3 $acts_dir/Python/material_validation_dice.py -o propagation-material -n $nevts  -m "material-map.json" -t $ntracks  $opts_tmp
         # Move output files
         mv propagation-material.root "$geo_dir/"
         mv geometry-map.json "$geo_dir/"
